@@ -20,6 +20,8 @@ import 'background_picker.dart';
 import '../desktop/platform.dart' show computerWord;
 import '../voice/voice_settings.dart';
 import 'common.dart';
+import 'gm_guide_screen.dart';
+import 'gm_web_screen.dart';
 import 'rcs_setup.dart';
 import 'voice_pane.dart';
 import 'computers.dart';
@@ -292,7 +294,7 @@ List<SettingsSection> _ownSections() => [
     ];
 
 /// The version this build is, where Android has not said (the screens drawn in tests).
-const appVersion = '0.7.29';
+const appVersion = '0.7.30';
 
 // --- Appearance -------------------------------------------------------------------------------------------------------
 
@@ -436,6 +438,22 @@ List<Widget> _messages(BuildContext context, SettingsModel m) {
               ? 'Ghost works beside Google Messages: RCS chats and texts in Ghost, Ghost\'s notifications. Open to check each step.'
               : 'Typing dots, read receipts, full-size pictures and group chats over the internet, through Google Messages. A few steps, one at a time.'),
           onPress: () => push(context, (_) => const RcsSetupScreen()),
+        ),
+        // Google Messages' web connection on the phone (lib/ui/gm_web_screen.dart; Matt, 2026-11-15: "Can you build the
+        // on phone google messages connection too?").
+        SettingRow(
+          icon: _icon(Lucide.link),
+          label: 'Google Messages connection',
+          hint: const Text('Pictures, reactions and read marks for RCS chats in Ghost, without Google Messages\' notifications. Paired once with another screen\'s help.'),
+          onPress: () => push(context, (_) => const GmWebScreen()),
+        ),
+        // The same on a Mac or a PC, kept running (lib/ui/gm_guide_screen.dart; Matt, 2026-11-15: "Tell me how to setup
+        // the sidecar on mac and PC in a guide found in settings").
+        SettingRow(
+          icon: _icon(Lucide.laptop),
+          label: 'On a Mac or PC',
+          hint: const Text('How to run the Google Messages helper on your computer, and keep it running.'),
+          onPress: () => push(context, (_) => const GmGuideScreen()),
         ),
       ]),
     PaneSection(title: 'Writing', children: [

@@ -11,6 +11,7 @@ import '../../art/lucide_more.dart';
 import '../../kit/settings_kit.dart';
 import '../../ui/common.dart';
 import '../../ui/computers.dart';
+import '../../ui/gm_guide_screen.dart';
 import '../../ui/settings.dart';
 import '../../ui/settings_panes.dart' show aboutLicences;
 import '../gm_web.dart';
@@ -187,11 +188,18 @@ class _GmPage extends StatelessWidget {
               title: 'Paired with Google Messages',
               footer: const Text('Every conversation in Google Messages shows here, RCS and texts, with their history and pictures. Your phone needs to be on and online: the messages go through it.'),
               children: [
+                if (gm.inactive)
+                  SettingRow(
+                    icon: _icon(LucideMore.smartphone),
+                    label: 'Your phone has Google Messages for now',
+                    hint: const Text('Google Messages keeps one web session at a time, and Ghost on your phone holds it. This computer shows the same conversations through your phone.'),
+                  ),
                 SettingRow(
                   icon: _icon(gm.connected ? Lucide.circleCheck : Lucide.triangleAlert),
                   label: gm.connected ? 'Connected' : 'Connecting…',
                   hint: Text([if (gm.phone.isNotEmpty) gm.phone, ?gm.problem].join(' · ').ifEmpty('Google Messages answers this computer directly')),
                 ),
+                SettingRow(icon: _icon(Lucide.bookOpen), label: 'Keep it running', hint: const Text('Open at login, and staying awake: the guide.'), onPress: () => push(context, (_) => const GmGuideScreen())),
                 SettingRow(
                   icon: _icon(Lucide.unlink),
                   label: 'Unpair Google Messages',
@@ -209,6 +217,7 @@ class _GmPage extends StatelessWidget {
               footer: const Text('The connection is this computer\'s alone: messages go between it and Google, as they do for messages.google.com, never through Ghost\'s servers. It is done by a small open-source helper built on mautrix-gmessages (GNU AGPL).'),
               children: [
                 if (gm.problem != null) SettingRow(icon: _icon(Lucide.triangleAlert), label: 'Not paired', hint: Text(gm.problem!)),
+                SettingRow(icon: _icon(Lucide.bookOpen), label: 'How it works', hint: const Text('Pairing, keeping it running on this computer, and using it with your phone.'), onPress: () => push(context, (_) => const GmGuideScreen())),
                 SettingRow(icon: _icon(LucideMore.qrCode), label: 'Pair with Google Messages', hint: const Text('Shows a QR code to scan in Google Messages on your phone.'), onPress: () async {
                   try {
                     await gm.pair();
