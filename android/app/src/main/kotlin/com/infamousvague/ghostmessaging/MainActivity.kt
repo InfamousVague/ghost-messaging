@@ -108,6 +108,8 @@ class MainActivity : FlutterActivity() {
                 "requestDefault" -> requestDefault(result)
                 // Beside Google Messages (GmBridge): Android's page for notification access, and the SMS permissions.
                 "bridgeAccess" -> { startActivity(GmBridge.accessIntent(this)); result.success(true) }
+                "openGm" -> result.success(GmBridge.open(this))
+                "openGmNotifications" -> result.success(GmBridge.openNotificationSettings(this))
                 "requestSms" -> requestSms(result)
                 "requestPermissions" -> requestPermissions(result)
                 "openRequest" -> { result.success(pendingOpen); pendingOpen = null }
@@ -172,6 +174,13 @@ class MainActivity : FlutterActivity() {
                 }
                 // Try again, on a picture message that could not be brought down (Store.insertMmsNotice).
                 "retryDownload" -> bg { MmsPushReceiver.retry(applicationContext, call.argument<Number>("id")!!.toLong()); null }
+                // A friend by username wrote (lib/standalone/overlay.dart keeps their words in Dart): said as a
+                // text from a contact would be, unless that conversation is on the screen.
+                "notifyChat" -> bg {
+                    Notifier.chat(applicationContext, call.argument<Number>("thread")!!.toLong(), call.argument<String>("who") ?: "", call.argument<String>("body") ?: "")
+                    null
+                }
+                "cancelChat" -> bg { Notifier.cancel(applicationContext, call.argument<Number>("thread")!!.toLong()); null }
                 "markRead" -> bg {
                     val t = call.argument<Number>("thread")!!.toLong()
                     store.markRead(t); Notifier.cancel(applicationContext, t); null
@@ -551,6 +560,7 @@ class MainActivity : FlutterActivity() {
             // whether the SMS database may be read and texts sent (granted by asking, when Ghost is not the default).
             "gmInstalled" to GmBridge.isInstalled(this),
             "bridge" to GmBridge.hasAccess(this),
+            "gmDefault" to GmBridge.isGmDefault(this),
             "sms" to (granted(Manifest.permission.READ_SMS) && granted(Manifest.permission.SEND_SMS)),
         )
     }

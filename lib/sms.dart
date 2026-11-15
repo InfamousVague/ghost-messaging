@@ -292,7 +292,7 @@ class MmsAttempt {
 }
 
 class SmsStatus {
-  const SmsStatus({required this.isDefault, required this.contacts, required this.notifications, required this.phone, this.gmInstalled = false, this.bridge = false, this.sms = false});
+  const SmsStatus({required this.isDefault, required this.contacts, required this.notifications, required this.phone, this.gmInstalled = false, this.bridge = false, this.sms = false, this.gmDefault = false});
   final bool isDefault;
   final bool contacts;
   final bool notifications;
@@ -303,6 +303,9 @@ class SmsStatus {
   final bool gmInstalled;
   final bool bridge;
   final bool sms;
+
+  /// Google Messages is the default SMS app now (RCS works only there).
+  final bool gmDefault;
 
   /// Ghost beside Google Messages, not the default: its RCS chats come through its notifications.
   bool get beside => !isDefault && bridge && sms;
@@ -318,6 +321,7 @@ class SmsStatus {
         gmInstalled: m['gmInstalled'] == true,
         bridge: m['bridge'] == true,
         sms: m['sms'] == true,
+        gmDefault: m['gmDefault'] == true,
       );
 }
 
@@ -534,6 +538,10 @@ abstract class SmsCalls {
 /// Calls that reach the phone from somewhere else (a computer's link), where what can be asked depends on the phone
 /// at the other end: an older Ghost Messaging there does less. [caps] names what it does beyond the first few
 /// (android DeskCalls.CAPS), so a screen offers only what will work ([Sms.can]).
+/// Calls answered on the Android phone itself, though not straight by its channel: what keeps the phone's friends by
+/// username in Dart in front of it (lib/standalone/overlay.dart). [Sms.remote] stays false behind one.
+abstract class PhoneSide {}
+
 abstract class CapableCalls {
   Set<String> get caps;
 }
@@ -616,7 +624,11 @@ class Sms {
 
   /// These screens are not on the Android phone: no texts here, so what only the phone can do is not offered. True on
   /// a computer and on an iPhone, paired or not.
-  static bool get remote => _calls is! _ChannelCalls;
+  static bool get remote => !(_calls is _ChannelCalls || _calls is PhoneSide);
+
+  /// The calls as they are answered now: the phone's channel, or what stands in front of it (lib/standalone).
+  // ignore: unnecessary_getters_setters
+  static SmsCalls get calls => _calls;
 
   /// An iPhone of its own (lib/standalone; Matt, 2026-11-15: "roll a version of the app that works without sms"):
   /// no phone to ask, so the routes, the relay server's directory, friends by username and calls run here, as they do
@@ -764,6 +776,12 @@ class Sms {
 
   /// Beside Google Messages: Android's page for notification access, opened at Ghost (android GmBridge.kt).
   Future<void> openBridgeAccess() => _calls.invokeMethod<bool>('bridgeAccess');
+
+  /// Opens Google Messages, or its Play Store page where it is not on the phone.
+  Future<void> openGm() => _calls.invokeMethod<bool>('openGm');
+
+  /// Android's notification settings for Google Messages, to make them silent (Ghost then shows its own).
+  Future<void> openGmNotifications() => _calls.invokeMethod<bool>('openGmNotifications');
 
   /// Beside Google Messages: reading the SMS database and sending texts, asked for.
   Future<SmsStatus> requestSms() async => SmsStatus.from((await _calls.invokeMethod<Map>('requestSms')) ?? const {});

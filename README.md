@@ -30,6 +30,19 @@ github.com/InfamousVague/ghost-gmessages-sidecar).
 - **Becomes the default SMS app**: the first screen asks Android for the SMS role. Every existing conversation is
   there straight away, because messages live in Android's own SMS/MMS database (the Telephony provider), not the
   app. Switching back to another SMS app loses nothing.
+- **Set up RCS, and Ghost's notifications in place of Google Messages'** (not released; `lib/ui/rcs_setup.dart`,
+  GmBridge.kt; Matt, 2026-11-15: "add a button under messages settings to setup RCS if on an android phone and walk
+  the user through how to enable the rcs sidecar"; "we should have a way to make the app work without needing to be
+  the default sms app so it can work in tandem and I can turn off notifications from google messages or hide them and
+  proxy everything through ghost"). Settings › Messages › Set up RCS walks through six steps, each ticked as Android
+  says: Google Messages installed, made the default, RCS chats on in it, Ghost allowed texts, notification access,
+  Google Messages' notifications set to Silent; then how to pair a computer (Settings › Google Messages there). When
+  Google Messages becomes the default, Android takes Ghost's SMS permissions back and the walkthrough opens at its
+  texts page, carrying on with the same steps (`rcs_setup`). Beside Google Messages, each of its message
+  notifications is hidden as it comes and Ghost's own shown (Settings › Notifications, `gm_proxy`, on by default);
+  replying from Ghost's goes back through Google Messages. Never hidden where Ghost may not post notifications.
+  Google Messages' own must stay allowed (Silent): they are what Ghost reads. Checked on an emulator: Google
+  Messages' notification gone, Ghost's shown, a reply from it sent through Google Messages.
 - **Google Messages on the computer** (0.7.25, not released; `lib/desktop/gm_web.dart`, `sidecar/gmessages`; Matt,
   2026-11-15: "Yes, mautrix sidecar"). Settings › Google Messages on the Mac or Windows pairs the computer with Google
   Messages by a QR code, as messages.google.com is, and every conversation there joins the desktop's list: RCS and
@@ -570,12 +583,34 @@ github.com/InfamousVague/ghost-gmessages-sidecar).
   - **Pages** (`lib/ui/hangout_screen.dart`): a hangout opens its page: who is here, Join voice, and the chat. In the
     call a toggle switches between people and chat. Roles show beside names; press and hold someone for their role,
     Mute for everyone, Remove and Ban, as your role allows. The shield opens Roles and permissions.
+  - **Layout** (Matt, 2026-11-15: "When opening a hangout the left side should show the chat with some space below
+    reserved for the navbar controls, the voice on desktop should show up on the left side with the right side reserved
+    for chat, when a video starts split the right side 50/50 showing the videos above the chat"). A hangout opened from
+    the list is in the list's place, its composer and dock standing above the pill (`HangoutScreen.inSidebar`). Beside
+    the list (a computer, the Fold open) the call is the people and the dock there, and the pane is the chat
+    (`HangoutStage`), whose top half becomes the videos (`CallVideos`) once anyone turns one on.
   - **The browser** (site/join): the same chat beside the call, role tags, and the same rules. It checks rosters
     itself (P-256 by WebCrypto; tool/voicebench/roster_check.mjs checks rosters the app signed) and leaves when
     removed or banned. tool/voicebench/join_test.mjs covers the chat both ways and history for a latecomer.
   - **Not yet:** a moderator's mute is held only while they are in the hangout; Matt's phone and computer are two
     people to a hangout (the computer has its own key), so a hangout made on one makes the other a member until the
     owner makes it an admin; the site's join page needs `tool/deploy-site.mjs` to go live.
+- **Friends by username on Android: iPhones and Android phones text each other** (not released; Matt, 2026-11-15:
+  "Yes, Android next").
+  - Android's store of texts has no room for someone with no number, so a friend by username's conversation is kept
+    in Dart (`lib/standalone/chats.dart`, `UsernameChats`, the same store the iPhone uses) and `OverlayCalls`
+    (`lib/standalone/overlay.dart`) stands in front of the phone's channel: what is about an `@username`, or a
+    conversation or row it keeps (ids from 2^40), is answered there; the list, contacts search and encryption states
+    are the phone's with these added; everything else goes to the phone. `Sms.remote` stays false behind it
+    (`PhoneSide`).
+  - android Buddies.peers gives a friend who said yes the address `@username`, so `Friends` carries their words.
+    A message from them is notified by `Notifier.chat` (Android's own notifications see only its store). No phone
+    call button for them, and no wake text (they have no number).
+  - Checked live, Android emulator and iPhone Simulator over the relay: a request each way, a message each way,
+    delivered, shown in the open conversation and in the list beside texts.
+  - Not yet: a paired computer does not see these conversations (it asks the phone's Android side); a message the
+    relay passes to a connection that has just died is lost, as for any friend (nothing is sent again without an
+    answer); a closed or backgrounded app hears them only when it connects again.
 - **Ghost Messaging on iPhone, without SMS** (not released; Matt, 2026-11-15: "port the app to work on iOS as well,
   investigate if we can within apples rules make a bridge for messaging through RCS like we're doing with mautrix on
   android and if not we'll want to roll a version of the app that works without sms"; "it's unlikely the user will
@@ -603,7 +638,7 @@ github.com/InfamousVague/ghost-gmessages-sidecar).
   iconography for each step, mimick this on the setup of Ghost Messaging"). `lib/onboarding`: each page a band of
   vivid colour with its sign and four drifting glass tiles (band.dart, Ghost.md's `HueBand` by way of Ghost
   Keyboard), a title, its words, and its step; dots and the Next button take the page's colour.
-  - **Six pages, Ghost as one messenger** (0.7.27, not released; Matt, 2026-11-15: "Rework the onboarding to be a bit
+  - **Six pages, Ghost as one messenger** (0.7.27; Matt, 2026-11-15: "Rework the onboarding to be a bit
     shorter and have it focus on the fact that ghost is an all in one messenger look at branding from things like
     discord telegram etc and find our own voice amoung those"): Everyone, in one place · Start with your texts ·
     Texts and chats, side by side · Drop in, out loud · On every screen · You're in (a look, then "Say hi"). The
