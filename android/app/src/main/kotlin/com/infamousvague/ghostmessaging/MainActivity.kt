@@ -71,6 +71,7 @@ class MainActivity : FlutterActivity() {
                 events = sink
                 Bus.listener = { thread -> events?.success(mapOf("type" to "changed", "thread" to thread)) }
                 Bus.prefsListener = { events?.success(mapOf("type" to "prefs")) }
+                CallService.onLeave = { runOnUiThread { events?.success(mapOf("type" to "leaveCall")) } }
                 Desk.listener = { events?.success(mapOf("type" to "desk")) }
                 Voice.listener = { state -> main.post { events?.success(state) } }
                 // A data text for the app's routes (NetSms.kt): to Dart, which opens it.
@@ -304,6 +305,17 @@ class MainActivity : FlutterActivity() {
                 // one copied to a file of this app's own, which TDLib sends from; a recording ended as a file; and a
                 // file that came opened in whichever app reads it.
                 "pickFiles" -> pickImages(result, any = true)
+                // A call in a space (CallService.kt): going on with the phone locked, until it ends.
+                "callStarted" -> { CallService.start(this, call.argument<String>("name") ?: "", call.argument<Boolean>("video") ?: false); result.success(null) }
+                "callEnded" -> { CallService.stop(this); result.success(null) }
+                // Ghost's own lists of what was deleted beside Google Messages, kept on the account too (lib/kept_lists.dart).
+                "hiddenLists" -> bg { mapOf("threads" to store.hiddenThreads().mapKeys { it.key.toString() }, "msgs" to store.hiddenMessages().toList()) }
+                "addHiddenLists" -> bg {
+                    val threads = (call.argument<Map<String, Number>>("threads") ?: emptyMap()).mapNotNull { (k, v) -> k.toLongOrNull()?.let { it to v.toLong() } }.toMap()
+                    val added = store.addHidden(threads, call.argument<List<String>>("msgs") ?: emptyList())
+                    if (added) Bus.changed(-1)
+                    added
+                }
                 "cacheCopy" -> bg { cacheCopy(Uri.parse(call.argument<String>("uri")!!)) }
                 "voiceFinish" -> bg {
                     val recorded = Voice.stop() ?: throw IllegalStateException("That was too short to send")

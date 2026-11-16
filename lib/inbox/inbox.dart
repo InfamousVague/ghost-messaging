@@ -1,7 +1,9 @@
 import 'package:flutter/foundation.dart';
 
 import '../app_state.dart';
+import '../kept_lists.dart';
 import 'bluesky.dart';
+import 'mastodon.dart';
 import 'telegram.dart';
 
 /// Direct messages from other networks, read and answered in Ghost (Matt, 2026-11-15: "Let's build in telegram and
@@ -46,6 +48,9 @@ class InboxChat {
     this.lastFromMe = false,
     this.pinned = false,
     this.service = false,
+    this.stranger = false,
+    this.cold = false,
+    this.flag,
   });
 
   /// [InboxNetwork.id] of the network it is on.
@@ -71,6 +76,15 @@ class InboxChat {
   /// The network's own account or a bot, not a person: where sign-in codes come from (Telegram's 777000).
   final bool service;
 
+  /// Someone not in this account's contacts wrote first (Telegram's "Report spam" bar): spam is looked for (scams.dart).
+  final bool stranger;
+
+  /// A stranger wrote and this account never answered: Telegram still offers to report them (its action bar).
+  final bool cold;
+
+  /// What the network itself says of the account, where it marks it ("Telegram marks this account as a scam").
+  final String? flag;
+
   InboxChat copyWith({String? title, DateTime? date, String? snippet, int? unread, String? avatar, bool? lastFromMe}) => InboxChat(
         network: network,
         id: id,
@@ -83,6 +97,9 @@ class InboxChat {
         lastFromMe: lastFromMe ?? this.lastFromMe,
         pinned: pinned,
         service: service,
+        stranger: stranger,
+        cold: cold,
+        flag: flag,
       );
 }
 
@@ -235,6 +252,7 @@ abstract class InboxNetwork extends ChangeNotifier {
     final s = localList(what);
     on ? s.add(item) : s.remove(item);
     listStore?.set('inbox_${id}_$what', s.join('\u001f'));
+    KeptLists.instance.changed();
   }
 
   /// The chat opened in the app: kept fresh more often while it is shown. Null when none is.
@@ -260,7 +278,9 @@ class Inbox {
   static Inbox? _instance;
   // Bluesky is built and tested, and offered later (Matt, 2026-11-15: "I don't have bluesky setup yet, set that to
   // "coming soon"").
-  static Inbox get instance => _instance ??= Inbox._([Telegram(), Bluesky(soon: true)]);
+  // Mastodon is built and tested, and offered later too (Matt, 2026-11-15: "Wire up mastadon and bluesky and have them
+  // set as coming soon until we get the API keys setup").
+  static Inbox get instance => _instance ??= Inbox._([Telegram(), Bluesky(soon: true), Mastodon(soon: true)]);
 
   /// Stand-ins for a test of a screen; null puts the app's own back.
   @visibleForTesting
