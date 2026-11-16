@@ -53,6 +53,10 @@ import 'package:ghost_messaging/ui/conversations.dart';
 import 'package:ghost_messaging/ui/gm_guide_screen.dart';
 import 'package:ghost_messaging/ui/gm_web_screen.dart';
 import 'package:ghost_messaging/ui/rcs_setup.dart';
+import 'package:ghost_messaging/ui/video_screen.dart';
+import 'package:video_player_platform_interface/video_player_platform_interface.dart';
+
+import 'support/fake_video.dart';
 import 'package:ghost_messaging/ui/settings.dart';
 import 'package:ghost_messaging/ui/nav_bar.dart';
 import 'package:ghost_messaging/ui/new_group.dart';
@@ -394,9 +398,16 @@ void _answerChannel() {
             // As a video comes from an iPhone as a picture message: 320 by 240, under a megabyte.
             ? {'picture': File('assets/stickers/party/03.webp').readAsBytesSync(), 'millis': 12400, 'width': 640, 'height': 360, 'videoWidth': 320, 'videoHeight': 240, 'bytes': 912384}
             : {'picture': null, 'millis': 0, 'width': 0, 'height': 0};
+      // A text sent: the phone's thread for it.
+      case 'send':
+        return 1;
       case 'videoPlay':
         _videosPlayed.add((args['part'] as num).toInt());
         return null;
+      // The phone's own player (lib/ui/video_screen.dart) opens the video as a file.
+      case 'videoFile':
+        _videosPlayed.add((args['part'] as num).toInt());
+        return '/tmp/video-${args['part']}.mp4';
       // Voice messages: how long each runs, and a recording that hears a voice rise and fall.
       case 'voiceLength':
         return switch ((args['part'] as num).toInt()) { 911 => 7400, 913 => 41000, _ => 23000 };
@@ -648,10 +659,16 @@ void main() {
       expect(find.text(shrunkNote), findsOneWidget);
       // One no picture can be made of is still named, and can still be tried.
       expect(find.text('9864ade8-2512-4c3f-83b2-8d46dbb76b14.webm'), findsOneWidget);
-      await tester.tap(players.first);
-      await _settle(tester);
-      await tester.tap(players.last);
-      await _settle(tester);
+      // Each opens Ghost's own player (Matt: "id like a video player built with glacier UI"), closed again by its back button.
+      VideoPlayerPlatform.instance = FakeVideoPlayer();
+      for (final p in [players.first, players.last]) {
+        await tester.tap(p);
+        await _settle(tester);
+        expect(find.byType(VideoScreen), findsOneWidget);
+        await tester.tap(find.byWidgetPredicate((w) => w is GlacierPressable && w.semanticLabel == 'Back').last);
+        await _settle(tester);
+        expect(find.byType(VideoScreen), findsNothing);
+      }
       expect(_videosPlayed.toSet(), {921, 922});
       // Voice messages: each drawn as a player that says how long it runs; the microphone stands where Send would.
       await _shoot(tester, sheet, const ThreadScreen(thread: 4, people: [Person(address: '+15551230001', name: 'Maya Chen')]), '2-thread-voice', dark: dark);
@@ -891,7 +908,13 @@ void main() {
       // guide found in settings").
       await _shoot(tester, sheet, const GmGuideScreen(), '19-gm-guide', dark: dark);
       expect(find.text('1. Get the app'), findsOneWidget);
+      // The app's own video player (lib/ui/video_screen.dart; Matt, 2026-11-15: "id like a video player built with
+      // glacier UI right now it looks like a very old android core system player"), the stand-in engine at 0:42 of 2:40.
+      VideoPlayerPlatform.instance = FakeVideoPlayer();
+      await _shoot(tester, sheet, const VideoScreen(path: '/tmp/none.mp4', title: 'Maya Chen'), '21-video', dark: dark);
+      expect(find.text('2:40'), findsOneWidget);
       await tester.pumpWidget(const SizedBox());
+      await tester.pump(const Duration(seconds: 4));
       _gmWeb = const {'available': true, 'running': true, 'paired': false, 'connected': false};
       // Ghost is the texting app: each page after, in turn.
       _statusSaid = const {'isDefault': true, 'contacts': false, 'notifications': false, 'phone': true};
@@ -1333,6 +1356,13 @@ void main() {
       expect(send, findsOneWidget);
       final disc = find.descendant(of: send, matching: find.byType(Container)).evaluate().map((e) => (e.widget as Container).decoration).whereType<BoxDecoration>().map((d) => d.color?.toARGB32()).toList();
       expect(disc, contains(0xFF0A84FF), reason: 'Send wears the bubble colour');
+      // Sent, it is drawn at once as sending, before the phone has answered (Matt, 2026-11-15: "optimistically render a
+      // sent message bubble so it appears instantly").
+      await tester.tap(send);
+      await tester.pump();
+      expect(find.text('On my way', findRichText: true), findsOneWidget, reason: 'the bubble, the composer emptied');
+      expect(find.byWidgetPredicate((w) => w is Semantics && w.properties.label == 'sending'), findsWidgets);
+      await _settle(tester);
       // And every other colour is as it was (Matt, of 0.7.15: "make sure this next update brings back all the
       // colors to the app, they're missing from virtually every place where we had colors before on all the message
       // avatars and settings sections"): a face keeps its own colour, and so does each section of Settings.
