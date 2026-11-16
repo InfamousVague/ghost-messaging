@@ -159,10 +159,18 @@ object GmWeb {
         val conv = c.getString("id")
         val ps = c.optJSONArray("people") ?: JSONArray()
         val addresses = ArrayList<String>()
+        // You are among a conversation's people, not always marked as you (Matt, 2026-11-15: "i see two chats for
+        // message DMs one in the nromal layout that just shows the person I'm texting then one that is the person and
+        // me in a group"): known also as the one the conversation sends from, and by this phone's own numbers.
+        val outgoing = c.optString("outgoing")
+        val store = Store(app)
+        val own = try { store.ownNumbers() } catch (_: Exception) { emptySet() }
         for (i in 0 until ps.length()) {
             val p = ps.getJSONObject(i)
             people["$conv/${p.optString("id")}"] = p
-            if (!p.optBoolean("me")) p.optString("number").takeIf { it.isNotBlank() }?.let { addresses += it }
+            val number = p.optString("number")
+            val me = p.optBoolean("me") || (outgoing.isNotEmpty() && p.optString("id") == outgoing) || (number.isNotBlank() && store.isOwn(number, own))
+            if (!me && number.isNotBlank() && addresses.none { Store.sameNumber(it, number) }) addresses += number
         }
         val group = c.optBoolean("group")
         val title = c.optString("name").ifBlank { null }
@@ -213,13 +221,21 @@ object GmWeb {
     fun isPart(id: Long) = id >= 1_000_000_000_000L
 
     /** A picture's bytes, brought down once and kept in the app's cache. */
-    fun part(context: Context, id: Long): ByteArray? {
-        val f = File(File(context.cacheDir, "gmmedia").apply { mkdirs() }, "$id")
-        if (!f.exists()) {
-            val (media, key, _) = GmBridge.Db.get(context).part(id) ?: return null
-            try { ask("media", mapOf("media" to media, "key" to key, "path" to f.absolutePath), seconds = 120) } catch (_: Exception) { return null }
+    fun part(context: Context, id: Long): ByteArray? = file(context, id)?.readBytes()
+
+    /**
+     * A picture's or a video's file, brought down once into the app's cache (Matt, 2026-11-15: "videos are saying
+     * "cannot play on this phone"": the player read Android's MMS store, where these are not). Blocks: never on the
+     * main thread. Named with its kind's ending, which a player may go by.
+     */
+    fun file(context: Context, id: Long): File? {
+        val (media, key, mime) = GmBridge.Db.get(context).part(id) ?: return null
+        val ending = android.webkit.MimeTypeMap.getSingleton().getExtensionFromMimeType(mime) ?: "bin"
+        val f = File(File(context.cacheDir, "gmmedia").apply { mkdirs() }, "$id.$ending")
+        if (!f.exists() || f.length() == 0L) {
+            try { ask("media", mapOf("media" to media, "key" to key, "path" to f.absolutePath), seconds = 180) } catch (_: Exception) { return null }
         }
-        return if (f.exists()) f.readBytes() else null
+        return if (f.exists() && f.length() > 0) f else null
     }
 
     /** Whether [conv] is one this connection knows: what is sent to it goes this way. */
