@@ -11,10 +11,12 @@ import '../art/lucide.g.dart';
 import '../kit/fold.dart';
 import '../kit/settings_kit.dart';
 import '../kit/settings_type.dart';
+import '../plugins/codes.dart' show CodesPlugin;
 import '../plugins/list.dart';
+import '../plugins/plugin.dart' show PluginAction, PluginHost, RowLook;
 import '../art/lucide_more.dart';
 import '../plugins/registry.dart' show PluginSection;
-import '../plugins/ui.dart' show FilterButton, MarkAllRead;
+import '../plugins/ui.dart' show FilterButton, MarkAllRead, PluginRow;
 import '../reactions.dart';
 import '../sms.dart';
 import '../summaries.dart';
@@ -281,6 +283,61 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
     }
   }
 
+  /// The main list with Telegram's and Bluesky's chats among the texts, newest first, after the pinned conversations
+  /// (Matt, 2026-11-15: "Id like the telegram chats to be mixed into the normal text messages (same with bluesky) just
+  /// add a telegram icon in thr corner of the bubble"). While older texts are still being read, a chat older than the
+  /// oldest text held waits for them, so the list does not jump.
+  List<Object> _mixed(List<Conversation> shown) {
+    // Codes: a Telegram sign-in code is there among the texted ones (Matt, 2026-11-15: "proxy telegram codes through to
+    // the codes tab as well"); any other section is the texts' own.
+    final codes = !widget.archived && _codesHost != null;
+    if (_section != null && !(codes && _section == CodesPlugin.section)) return shown;
+    final q = _query.toLowerCase();
+    // In the archive, the networks' archived chats among the archived texts.
+    final chats = [
+      for (final n in Inbox.instance.ready)
+        for (final c in widget.archived ? n.archivedChats : n.shownChats)
+          if ((q.isEmpty || c.title.toLowerCase().contains(q) || c.snippet.toLowerCase().contains(q)) && (codes && inboxCode(c) != null) == (_section == CodesPlugin.section)) c,
+    ];
+    if (chats.isEmpty) return shown;
+    if (_section != null) {
+      return ([for (final c in shown) (c.date, c as Object), for (final c in chats) (c.date, c as Object)]..sort((a, b) => b.$1.compareTo(a.$1))).map((e) => e.$2).toList();
+    }
+    bool pinnedChat(InboxChat c) => Inbox.instance.named(c.network)?.isPinned(c) ?? false;
+    final pinned = <(DateTime, Object)>[for (final c in shown) if (c.pinned) (c.date, c), for (final c in chats) if (pinnedChat(c)) (c.date, c)]..sort((a, b) => b.$1.compareTo(a.$1));
+    final rest = [for (final c in shown) if (!c.pinned) c];
+    final oldest = _more && rest.isNotEmpty ? rest.last.date : null;
+    final waiting = [for (final c in chats) if (!pinnedChat(c) && (oldest == null || !c.date.isBefore(oldest))) c];
+    final merged = <(DateTime, Object)>[for (final c in rest) (c.date, c), for (final c in waiting) (c.date, c)]
+      ..sort((a, b) => b.$1.compareTo(a.$1));
+    return [for (final m in pinned) m.$2, for (final m in merged) m.$2];
+  }
+
+  /// The Codes plugin's host while it is on: Telegram's codes go to its tab, and are copied by it.
+  PluginHost? get _codesHost => widget.archived ? null : _plugins.hostFor(context, CodesPlugin.section);
+
+  /// A Telegram chat in Codes, drawn as a texted code is: the code large, a tap or the button copies it.
+  Widget _inboxCodeRow(InboxChat chat, InboxNetwork network, String code, PluginHost host) {
+    final copy = PluginAction(
+      label: 'Copy $code',
+      icon: Lucide.copy,
+      run: (host) async {
+        host.copy(code, say: 'Copied $code');
+        await network.markRead(chat.id);
+      },
+    );
+    final c = Conversation(
+      id: -(chat.id.hashCode & 0x3fffffff) - 1,
+      date: chat.date,
+      people: [Person(address: '${chat.network}:${chat.id}', name: chat.title, photo: chat.avatar)],
+      snippet: chat.snippet,
+      unread: chat.unread > 0,
+      error: false,
+      archived: false,
+    );
+    return PluginRow(conversation: c, look: RowLook(value: code, end: copy, tap: copy, title: network.name), host: host, onPress: () => openInboxChat(context, network, chat), onLongPress: () => openInboxChat(context, network, chat));
+  }
+
   List<Conversation> get _shown {
     // Pinned conversations first, each group newest first (the order they arrive in).
     final held = (_all ?? const <Conversation>[]).where((c) => c.archived == widget.archived).toList();
@@ -361,8 +418,6 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
     final voices = Voice.instance.channels;
     final tabs = _plugins.tabs(_section, (section) => setState(() => _section = section), onMenu: _tabMenu, extra: [
       (id: voiceTab, icon: LucideMore.headphones, label: 'Spaces', count: voices.where(Voice.instance.live).length),
-      // Each network signed in (lib/inbox): Telegram's paper plane, Bluesky's sky.
-      for (final n in Inbox.instance.ready) (id: inboxTab(n), icon: n.id == 'telegram' ? Lucide.send : LucideMore.cloud, label: n.name, count: n.unreadChats),
     ]);
     final kinds = _plugins.kinds;
     if (tabs == null && kinds.isEmpty) return null;
@@ -699,9 +754,9 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
         ? [for (final c in inbox.chats) if (_query.isEmpty || c.title.toLowerCase().contains(_query.toLowerCase()) || c.snippet.toLowerCase().contains(_query.toLowerCase())) c]
         : _section == voiceTab
             ? voices
-            : shown;
+            : _mixed(shown);
     // Android's own count, where it has answered: the ones held are not all of them until the read ends.
-    final archivedCount = widget.archived ? 0 : (_more ? _archived : (_all ?? const <Conversation>[]).where((c) => c.archived).length);
+    final archivedCount = widget.archived ? 0 : (_more ? _archived : (_all ?? const <Conversation>[]).where((c) => c.archived).length) + Inbox.instance.ready.fold<int>(0, (n, net) => n + net.archivedChats.length);
     // Older conversations still arriving: said at the foot of the list, and in place of "Nothing found".
     final more = _more && !widget.archived;
     final gutter = t.space(4);
@@ -772,7 +827,33 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
           final at = i - extras;
           if (at < rows.length && rows[at] is InboxChat) {
             final chat = rows[at] as InboxChat;
-            return InboxChatRow(key: ValueKey('inbox-${chat.network}-${chat.id}'), chat: chat, onPress: () => openInboxChat(context, inbox!, chat));
+            final network = inbox ?? Inbox.instance.named(chat.network);
+            if (network == null) return const SizedBox.shrink();
+            final code = _section == CodesPlugin.section ? inboxCode(chat) : null;
+            final codesHost = code == null ? null : _codesHost;
+            final pinned = network.isPinned(chat);
+            // Slid as a conversation of texts is (Matt, 2026-11-15: "Don't use a press and hold menu on telegram chats
+            // use the same slide solution normal messages use"): left archives, further deletes (asked first), right
+            // pins, each on the network itself where it can.
+            return SwipeActions(
+              key: ValueKey('swipe-inbox-${chat.network}-${chat.id}'),
+              enabled: !_selecting,
+              archiveLabel: widget.archived ? 'Unarchive' : 'Archive',
+              archiveIcon: widget.archived ? Lucide.archiveRestore : Lucide.archive,
+              pinLabel: pinned ? 'Unpin' : 'Pin',
+              pinIcon: pinned ? Lucide.pinOff : Lucide.pin,
+              onArchive: () => network.archive(chat.id, !widget.archived),
+              onDelete: () => confirmInboxDelete(context, network, chat),
+              onPin: () => network.pin(chat.id, !pinned),
+              card: (inset: EdgeInsets.symmetric(horizontal: t.space(2), vertical: t.lenOf('0.1875rem')), radius: t.lenOf('1rem')),
+              child: code != null && codesHost != null
+                  ? _inboxCodeRow(chat, network, code, codesHost)
+                  : InboxChatRow(
+                      key: ValueKey('inbox-${chat.network}-${chat.id}'),
+                      chat: chat,
+                      onPress: () => openInboxChat(context, network, chat),
+                    ),
+            );
           }
           if (at < rows.length && rows[at] is VoiceChannel) {
             final v = rows[at] as VoiceChannel;
@@ -1017,8 +1098,11 @@ class _RcsNotice extends StatelessWidget {
 /// One conversation in the list: its face, its name, its last words and when. The Mac's list (lib/desktop) draws its
 /// rows with it too.
 class ConversationRow extends StatelessWidget {
-  const ConversationRow({super.key, required this.conversation, required this.onPress, required this.onLongPress, this.selecting = false, this.selected = false, this.summary});
+  const ConversationRow({super.key, required this.conversation, required this.onPress, required this.onLongPress, this.selecting = false, this.selected = false, this.summary, this.badge});
   final Conversation conversation;
+
+  /// A mark on the face's corner: the network a chat from Telegram or Bluesky is on (lib/ui/inbox_ui.dart).
+  final Widget? badge;
 
   /// What its unread texts come to, in a line, by the phone's own model (lib/summaries.dart): shown in place of the
   /// last words, marked as a summary.
@@ -1070,6 +1154,22 @@ class ConversationRow extends StatelessWidget {
                     ),
                     alignment: Alignment.center,
                     child: selected ? const AppIcon(Lucide.check, size: 22, strokeWidth: 2.6, wash: false, color: Color(0xFFFFFFFF)) : null,
+                  )
+                else if (badge != null)
+                  SizedBox.square(
+                    dimension: face,
+                    child: Stack(clipBehavior: Clip.none, children: [
+                      Avatar(people: c.people, size: face),
+                      Positioned(
+                        right: -3,
+                        bottom: -3,
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(shape: BoxShape.circle, color: t.color(state.pressed ? 'app-paper-3' : 'app-paper-2')),
+                          child: badge,
+                        ),
+                      ),
+                    ]),
                   )
                 else
                   Avatar(people: c.people, size: face),
