@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:flutter/widgets.dart';
 import 'package:glacier/glacier.dart';
@@ -7,12 +9,14 @@ import '../app_state.dart';
 import '../art/app_icon.dart';
 import '../art/lucide.g.dart';
 import '../kit/settings_type.dart';
+import '../friends/buddies.dart';
 import '../sms.dart';
 import 'common.dart';
 import 'new_group.dart';
 import '../art/lucide_more.dart';
 import 'voice_screen.dart';
 import 'hangout_screen.dart';
+import 'space_designs/space_design.dart';
 import '../voice/channels.dart';
 import 'compose.dart';
 import 'contacts.dart';
@@ -21,6 +25,7 @@ import 'nav_bar.dart';
 import 'settings.dart';
 import 'settings_panes.dart' show settingsGroupLabel, settingsSections;
 import 'thread.dart';
+import '../inbox/inbox.dart';
 
 /// The app's one frame, on the phone and on a computer alike (Matt, 2026-11-14: "Unify the UI experience to match on
 /// desktop and mac as well the desktop app should get all featues its missing from mobile and thr mobile app should
@@ -427,7 +432,12 @@ class AppShellState extends State<AppShell> with SingleTickerProviderStateMixin 
       return;
     }
     if (!mounted) return;
-    if (unread.isEmpty) return toast(context, 'Nothing is unread in the archive');
+    // Signal's, Telegram's and the rest archived, read on their networks too.
+    final chats = [for (final n in Inbox.instance.ready) for (final c in n.archivedChats) if (c.unread > 0) (n, c)];
+    for (final (n, c) in chats) {
+      unawaited(n.markRead(c.id));
+    }
+    if (unread.isEmpty && chats.isEmpty) return toast(context, 'Nothing is unread in the archive');
     var failed = 0;
     for (final c in unread) {
       try {
@@ -439,7 +449,7 @@ class AppShellState extends State<AppShell> with SingleTickerProviderStateMixin 
     if (!mounted) return;
     // The lists read their conversations again.
     closed.value++;
-    final n = unread.length - failed;
+    final n = unread.length + chats.length - failed;
     toast(
       context,
       failed == 0 ? '$n ${n == 1 ? 'conversation' : 'conversations'} marked as read' : '$n marked as read; $failed could not be',
@@ -463,7 +473,7 @@ class AppShellState extends State<AppShell> with SingleTickerProviderStateMixin 
   Widget _pill({required bool upright}) => ValueListenableBuilder<int>(
         valueListenable: archived,
         builder: (context, count, _) => ListenableBuilder(
-          listenable: Listenable.merge([Me.instance, Voice.instance]),
+          listenable: Listenable.merge([Me.instance, Voice.instance, Buddies.instance]),
           builder: (context, _) => NavPill(
             upright: upright,
             active: _showing ?? (settingsOpen ? 'settings' : (_archivedOpen ? 'archive' : 'messages')),
@@ -471,7 +481,8 @@ class AppShellState extends State<AppShell> with SingleTickerProviderStateMixin 
             items: [
               const NavItem(id: 'new', icon: Lucide.messageSquarePlus, label: 'New chat'),
               const NavItem(id: 'messages', icon: Lucide.messageSquare, label: 'Messages'),
-              const NavItem(id: 'contacts', icon: Lucide.contactRound, label: 'Contacts'),
+              // Contacts with how many friend requests wait for an answer there (lib/ui/username_friends.dart).
+              NavItem(id: 'contacts', icon: Lucide.contactRound, label: 'Contacts', count: Sms.paired ? 0 : Buddies.instance.requests.length),
               // Voice channels, lit while you're in one (Matt, 2026-11-14: "always open voice channels").
               NavItem(id: 'archive', icon: Lucide.archive, label: 'Archive', count: count, menu: _archiveRows),
               NavItem(id: 'settings', icon: Lucide.settings, label: 'Settings', count: Me.instance.unseen, menu: _settingsRows),
@@ -557,7 +568,8 @@ class AppShellState extends State<AppShell> with SingleTickerProviderStateMixin 
                         ),
                         // In a hangout's call beside the pane: who is in it, in the list's place (the chat is the
                         // pane's: HangoutStage).
-                        if (wide && Voice.instance.session != null && Voice.instance.session!.channel.hangout)
+                        // Not with one of the developer designs chosen: its call is a page of its own (space_design.dart).
+                        if (wide && !spaceDesignChosen(context) && Voice.instance.session != null && Voice.instance.session!.channel.hangout)
                           Positioned.fill(child: HangoutPeople(key: ValueKey('people-${Voice.instance.session!.channel.room}'), session: Voice.instance.session!)),
                         // The way round floats over the list's end, clear of the bar at the foot of a phone's
                         // screen; the list leaves it room (AppShell.pillRoom). Not on a wide phone, where it
@@ -576,7 +588,7 @@ class AppShellState extends State<AppShell> with SingleTickerProviderStateMixin 
                                 // In a hangout's call beside the pane the call's buttons stand where the pill was
                                 // (Matt, 2026-11-15: "hide the default navbar when in a hangout and show the call
                                 // controls where it was").
-                                child: wide && Voice.instance.session != null && Voice.instance.session!.channel.hangout
+                                child: wide && !spaceDesignChosen(context) && Voice.instance.session != null && Voice.instance.session!.channel.hangout
                                     ? Padding(
                                         key: const ValueKey('call-dock-in-pill'),
                                         padding: EdgeInsets.fromLTRB(t.space(3), 0, t.space(3), NavPill.inset(t)),
@@ -594,12 +606,15 @@ class AppShellState extends State<AppShell> with SingleTickerProviderStateMixin 
                         // The call you're in: a banner just above the dock (Matt, 2026-11-15: "switch the active
                         // call to be a banner again in the sidebar just above the navigation bar"); not while the call
                         // itself is open, nor under a page on a phone. Beside a dock stood up, it keeps clear of it.
-                        if (_showing != 'voice' && !(!wide && (settingsOpen || _open != null)) && !(wide && _inHangout != null))
+                        if (_showing != 'voice' && !(!wide && (settingsOpen || _open != null)) && !(wide && _inHangout != null && !spaceDesignChosen(context)))
                           Positioned(
                             left: t.space(3),
                             right: docked ? edges.right + NavPill.railWidth(t) : t.space(3),
                             bottom: edges.bottom + (docked ? NavPill.inset(t) : (NavPill.clearance(t) - NavPill.inset(t)) * (Sms.computer ? pillScrolledScale : 1) + t.space(2)),
-                            child: CallBanner(onOpen: () => go('voice')),
+                            child: CallBanner(onOpen: () {
+                              // A developer design draws the call as a page of its own; else the Voice page.
+                              if (!openSpaceCall(context)) go('voice');
+                            }),
                           ),
                       ]))),
                     ),
