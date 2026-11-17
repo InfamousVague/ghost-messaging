@@ -1,4 +1,6 @@
-import 'servers/server_preview.dart';
+import '../circles/circles.dart';
+import 'circles/circle_screen.dart';
+import 'circles/new_circle.dart';
 import 'split_handle.dart';
 import 'window_chrome.dart';
 import 'dart:async';
@@ -207,6 +209,15 @@ class AppShellState extends State<AppShell> with SingleTickerProviderStateMixin 
   /// Whether Settings is open in the list's place.
   bool get settingsOpen => _settings != null;
 
+  /// A circle, while it is open in the list's place, with a way back at its top (Matt, 2026-11-17: "make a new design
+  /// for [circles] ... with it's own sidebar full of spaces"); its spaces open in the pane.
+  Route<void>? _circle;
+  bool get circleOpen => _circle != null;
+
+  /// The seed of the circle open in the list's place, or null.
+  String? get openCircleSeed => _circleSeed;
+  String? _circleSeed;
+
   /// The section of Settings whose page is in the pane, or null: the row Settings' list marks.
   final settingsSection = ValueNotifier<String?>(null);
 
@@ -360,6 +371,54 @@ class AppShellState extends State<AppShell> with SingleTickerProviderStateMixin 
     }
   }
 
+  /// Opens [circle] in the list's place, with a way back at its top (lib/ui/circles/circle_screen.dart); beside it in
+  /// a wide window its first space is opened, as Settings opens its first section. Its spaces open in the pane
+  /// (`showing: 'circle'`), and go with it when it is left.
+  void openCircle(Circle circle) {
+    final side = _side.currentState;
+    if (side == null) {
+      // Asked for before the first frame: once there is a list.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _side.currentState != null) openCircle(circle);
+      });
+      return;
+    }
+    if (_showing != null) close();
+    side.popUntil((r) => r.isFirst);
+    final route = PageRouteBuilder<void>(
+      transitionDuration: const Duration(milliseconds: 200),
+      reverseTransitionDuration: const Duration(milliseconds: 160),
+      pageBuilder: (context, _, _) => CircleScreen(key: ValueKey('circle-${circle.seed}'), seed: circle.seed),
+      transitionsBuilder: (context, a, _, child) => SlideTransition(
+        position: Tween(begin: const Offset(1, 0), end: Offset.zero).animate(CurvedAnimation(parent: a, curve: Curves.easeOutCubic, reverseCurve: Curves.easeInCubic)),
+        child: child,
+      ),
+    );
+    setState(() {
+      _circle = route;
+      _circleSeed = circle.seed;
+    });
+    side.push(route);
+    route.popped.then((_) {
+      if (!mounted || _circle != route) return;
+      setState(() {
+        _circle = null;
+        _circleSeed = null;
+      });
+      // Its spaces go with it.
+      if (_showing == 'circle') close();
+    });
+    if (_wide) {
+      final first = circle.channels.firstOrNull;
+      if (first != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final ctx = _side.currentContext;
+          if (mounted && _circle == route && ctx != null) openCircleSpace(ctx, first);
+        });
+      }
+    }
+  }
+
   /// The section in the pane is no longer one of Settings' (a plugin's page, and the plugin was switched off): the
   /// page goes, and beside the list the first section takes its place (Settings' list sees to that).
   void settingsGone() {
@@ -380,12 +439,19 @@ class AppShellState extends State<AppShell> with SingleTickerProviderStateMixin 
           Choice('New chat', Lucide.messageSquarePlus, () => compose()),
           Choice('New group', Lucide.users, () => show(const NewGroupScreen(key: ValueKey('new-group')), showing: 'new')),
           Choice('New space', LucideMore.headphones, () => show(const NewChannelScreen(key: ValueKey('new-voice')), showing: 'new')),
+          // A circle: people and a sidebar of their own spaces (lib/ui/circles).
+          Choice('New circle', Lucide.circle, () => show(const NewCircleScreen(key: ValueKey('new-circle')), showing: 'new')),
+          // Its invite link pasted: in at once, its spaces in the list's place.
+          Choice('Join a circle by link', Lucide.link2, () => askCircleWords(context, title: 'Join a circle', hint: 'Paste the invite link someone sent you.', then: (link) {
+                final c = Circles.instance.joinLink(link);
+                if (c == null) {
+                  toast(context, 'That isn\'t a circle\'s invite link.', tone: GlacierToastTone.danger);
+                  return;
+                }
+                openCircle(c);
+              })),
           // A Discord server's voice channels as a group of spaces (lib/ui/space_groups_ui.dart).
           Choice('Add a Discord server', Lucide.link, () => show(const AddDiscordScreen(key: ValueKey('add-discord')), showing: 'new')),
-          // A made-up server in five layouts, to choose how servers should look (lib/ui/servers; Matt, 2026-11-17:
-          // "add a mocked sever ... when we click add server it should launch the mock version with a button to toggle
-          // between the 5 different designs").
-          Choice('Add a server (preview)', Lucide.layoutGrid, () => show(const ServerPreviewScreen(key: ValueKey('server-preview')), showing: 'server-preview'), hint: 'Five layouts to try, with a made-up server'),
         ]);
       case 'contacts':
         contacts();
@@ -822,9 +888,18 @@ class _Nothing extends StatelessWidget {
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             GhostLogo(size: t.lenOf('3.5rem')),
             SizedBox(height: t.space(4)),
-            Text('Choose a conversation', textAlign: TextAlign.center, style: pageText(t, t.fontSize('lg'), weight: dialup ? 'bold' : 'semibold', color: ink ?? t.color('app-ink-2'))),
-            SizedBox(height: t.space(1)),
-            Text('Or start a new chat from the bar under the list.', textAlign: TextAlign.center, style: pageText(t, t.fontSize('sm'), color: ink ?? t.color('app-ink-3'))),
+            // The Circles tab lists circles, not conversations: it says so.
+            ValueListenableBuilder(
+              valueListenable: ConversationsScreen.shownTab,
+              builder: (context, tab, _) {
+                final circles = tab == ConversationsScreen.circlesTab;
+                return Column(mainAxisSize: MainAxisSize.min, children: [
+                  Text(circles ? 'Choose a circle' : 'Choose a conversation', textAlign: TextAlign.center, style: pageText(t, t.fontSize('lg'), weight: dialup ? 'bold' : 'semibold', color: ink ?? t.color('app-ink-2'))),
+                  SizedBox(height: t.space(1)),
+                  Text(circles ? 'Or start one with + under the list.' : 'Or start a new chat from the bar under the list.', textAlign: TextAlign.center, style: pageText(t, t.fontSize('sm'), color: ink ?? t.color('app-ink-3'))),
+                ]);
+              },
+            ),
           ]),
         ),
       ),

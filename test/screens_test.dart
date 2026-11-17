@@ -1238,7 +1238,7 @@ void main() {
       Groups.instance = groups;
       await friends.start();
       await groups.start();
-      // The address book offers New group where there is a friend to put in one.
+      // The address book: New group is under the list's + now, not here.
       await _shoot(tester, sheet, ContactsScreen(key: ValueKey('contacts-$dark')), '15-groups-contacts', dark: dark);
       // Friends by username at the top: the field to add one, a request to answer, one sent, and a friend (Matt,
       // 2026-11-16: "We need a way to add friends on the network by username on the contacts page and see friend
@@ -1259,7 +1259,7 @@ void main() {
       expect(find.text('Friends by username'), findsOneWidget);
       Buddies.instance = null;
       await tester.runAsync(() => Me.instance.start(MemoryMeStore(), ValueNotifier(0), () => null));
-      expect(find.text('New group'), findsOneWidget);
+      expect(find.text('New group'), findsNothing);
       // The people added on Ghost Messaging come first, under their own heading, and the phone's contacts after.
       expect(find.text('On Ghost Messaging'), findsOneWidget);
       expect(tester.getTopLeft(find.text('Alex Kim')).dy, lessThan(tester.getTopLeft(find.text('Contacts').last).dy));
@@ -1288,7 +1288,9 @@ void main() {
       expect(find.text('3 members'), findsOneWidget);
       expect(find.text('You made the group "Weekend crew"'), findsOneWidget);
       expect(find.text('Message'), findsOneWidget);
-      expect(find.byWidgetPredicate((w) => w is IconTap && w.label == 'Add an attachment'), findsNothing);
+      // Words alone here, so Add an attachment is there but greyed out, where every conversation has it (Matt,
+      // 2026-11-17: "if it's not avilable on a given chat just disable the button but still show it").
+      expect(tester.widget<IconTap>(find.byWidgetPredicate((w) => w is IconTap && w.label == 'Add an attachment')).onPressed, isNull);
       await tester.enterText(find.byType(EditableText).first, 'Hike on Saturday?');
       // Send slides in under the words as they are typed.
       await _settle(tester);
@@ -1744,7 +1746,7 @@ void main() {
   // Matt, 2026-11-15: "use an icon only segmented toggle for the messages codes and add voice chats to the list as well,
   // try a few different layouts for switching between the few including a mixed view that shows them all intertwined
   // sorted by recency, also id like you to rework the active call indicator".
-  testWidgets('the list\'s three tabs with voice, and the call as a banner above the dock', (tester) async {
+  testWidgets('the list\'s three tabs with circles, and the call as a banner above the dock', (tester) async {
     tester.view.physicalSize = const Size(412 * 2.0, 892 * 2.0);
     tester.view.devicePixelRatio = 2.0;
     tester.view.padding = const FakeViewPadding(top: 48, bottom: 32);
@@ -1767,8 +1769,9 @@ void main() {
       // Tabs: icons alone, voice among them.
       await _shoot(tester, sheet, const AppShell(), '20-layout-tabs', dark: dark);
       expect(find.byType(SectionTabs), findsOneWidget);
-      final voiceTab = find.descendant(of: find.byType(SectionTabs), matching: find.byWidgetPredicate((w) => w is AppIcon && w.icon == LucideMore.headphones));
-      expect(voiceTab, findsOneWidget);
+      // Circles where Spaces was (Matt, 2026-11-17: "Let's do a circle for now ... with it's own sidebar full of spaces").
+      final circlesTab = find.descendant(of: find.byType(SectionTabs), matching: find.byWidgetPredicate((w) => w is AppIcon && w.icon == Lucide.circleDot));
+      expect(circlesTab, findsOneWidget);
       // The call: a banner just above the dock, the people talking rippling in it (Matt, 2026-11-15: "switch the
       // active call to be a banner again in the sidebar just above the navigation bar").
       expect(find.byType(CallBanner), findsOneWidget);
@@ -1784,10 +1787,11 @@ void main() {
       }
       // No Voice ring: calls are the Voice tab.
       expect(find.byKey(const ValueKey('nav-voice')), findsNothing);
-      await tester.tap(voiceTab);
+      await tester.tap(circlesTab);
       await _settle(tester);
-      await _shootAgain(tester, '20-layout-tabs-voice', dark: dark);
-      expect(find.byType(VoiceRow), findsNWidgets(2));
+      await _shootAgain(tester, '20-layout-tabs-circles', dark: dark);
+      // No circles here: spaces of one's own, as the Spaces tab listed them.
+      expect(find.text('Study room'), findsWidgets);
       await tester.pumpWidget(const SizedBox());
     }
   });

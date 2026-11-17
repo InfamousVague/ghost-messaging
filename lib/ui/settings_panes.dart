@@ -41,7 +41,6 @@ import 'me.dart';
 import 'network.dart';
 import 'settings.dart';
 import 'space_designs/space_design.dart';
-import '../app_state.dart';
 import '../summaries.dart';
 
 Widget _icon(LucideIcon icon) => AppIcon(icon, size: 18);
@@ -339,7 +338,7 @@ List<SettingsSection> _ownSections() => [
     ];
 
 /// The version this build is, where Android has not said (the screens drawn in tests).
-const appVersion = '0.9.1';
+const appVersion = '0.9.2';
 
 // --- Appearance -------------------------------------------------------------------------------------------------------
 

@@ -45,6 +45,7 @@ import '../sounds.dart';
 import '../kit/semantic_colors.dart';
 import 'dialup/bevel.dart' show DialupColors, isDialup;
 import 'message_line.dart';
+import 'jump_to_latest.dart';
 import 'translated_card.dart';
 
 /// One conversation: its messages oldest at the top, newest by the composer.
@@ -210,6 +211,9 @@ class _ThreadScreenState extends State<ThreadScreen> with WidgetsBindingObserver
     if (_recordingLimit != null) Sms.instance.cancelVoice().catchError((_) {});
     Sms.instance.stopVoice().catchError((_) {});
     if (_editing == null) Sms.instance.setDraft(widget.thread, _text.text);
+    // The spot itself was kept by the arrow (JumpToLatest) as it went; how many messages it took to get there goes with it.
+    ScrollMemory.hold(_spot, _limit);
+    _scroll.dispose();
     _text.dispose();
     _focus.dispose();
     super.dispose();
@@ -347,7 +351,7 @@ class _ThreadScreenState extends State<ThreadScreen> with WidgetsBindingObserver
   /// How many of the newest messages are held. A conversation opens on its newest [_opening], which is several
   /// screens of them, and takes [_step] more each time the reader nears the oldest held (Matt, 2026-11-13: "load by
   /// most recent first so that things are faster"). Before this it held the newest 300 and no way to the rest.
-  int _limit = _opening;
+  late int _limit = math.max(_opening, ScrollMemory.of(_spot)?.held ?? 0);
   static const _opening = 120;
   static const _step = 300;
 
@@ -367,6 +371,14 @@ class _ThreadScreenState extends State<ThreadScreen> with WidgetsBindingObserver
       WidgetsBinding.instance.addPostFrameCallback((_) => _readingOlder = false);
     }
   }
+
+  /// Where this conversation was left, and its list's controller, which starts there (lib/ui/jump_to_latest.dart; Matt,
+  /// 2026-11-17: "remember the scroll position when switching between chats").
+  String get _spot => 'sms:${widget.thread}';
+  late final ScrollController _scroll = ScrollMemory.controllerFor(() => _spot);
+
+  /// The messages from others, newest first, for the down arrow to count what came while the person was reading back.
+  Iterable<Object> get _incoming => _folded.messages.where((m) => !m.outgoing && !_isLine(m)).map((m) => m.key);
 
   /// The first message unread as the chat was opened (a group's), and whether that has been looked for yet.
   String? _firstNewKey;
@@ -1050,11 +1062,18 @@ class _ThreadScreenState extends State<ThreadScreen> with WidgetsBindingObserver
         if (_older && !_readingOlder && n.metrics.axis == Axis.vertical && n.metrics.extentAfter < 900) _readOlder();
         return false;
       },
-      child: ListView(
-        reverse: true,
-        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-        padding: EdgeInsets.fromLTRB(t.space(3), t.space(2), t.space(3), t.space(2)),
-        children: items,
+      child: JumpToLatest(
+        controller: _scroll,
+        chat: _spot,
+        incoming: _incoming,
+        inset: EdgeInsets.only(right: t.space(3), bottom: t.space(3)),
+        child: ListView(
+          controller: _scroll,
+          reverse: true,
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: EdgeInsets.fromLTRB(t.space(3), t.space(2), t.space(3), t.space(2)),
+          children: items,
+        ),
       ),
     );
   }
@@ -1173,11 +1192,19 @@ class _ThreadScreenState extends State<ThreadScreen> with WidgetsBindingObserver
           if (_older && !_readingOlder && n.metrics.axis == Axis.vertical && n.metrics.extentAfter < 900) _readOlder();
           return false;
         },
-        child: ListView(
-          reverse: true,
-          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          children: items,
+        // The arrow inside the well, at its corner: a raised square button, as the room's own are.
+        child: JumpToLatest(
+          controller: _scroll,
+          chat: _spot,
+          incoming: _incoming,
+          inset: const EdgeInsets.only(right: 8, bottom: 8),
+          child: ListView(
+            controller: _scroll,
+            reverse: true,
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            children: items,
+          ),
         ),
       ),
     );
@@ -1218,8 +1245,6 @@ class _ThreadScreenState extends State<ThreadScreen> with WidgetsBindingObserver
     final composerStrut = StrutStyle.fromTextStyle(composerText, forceStrutHeight: true, leadingDistribution: TextLeadingDistribution.even);
     final canSend = editing ? _text.text.trim().isNotEmpty : (_text.text.trim().isNotEmpty || _attachments.isNotEmpty) && !_sending;
     final isMms = !_isGhost && (_group || _attachments.isNotEmpty);
-    // Nothing written and nothing attached: the microphone stands where Send would, to record a voice message.
-    final voiceOffered = Sms.can('sendVoice') && !_isGhost && !_byName && !editing && _people.isNotEmpty && _text.text.isEmpty && _attachments.isEmpty;
     // A sealed text goes as `ghost:e1:` and base64 of its bytes with 28 more (E2eCrypto.seal): longer than what was
     // typed, and plain letters whatever was typed.
     final sealed = _e2e.on && !isMms;
@@ -1232,7 +1257,7 @@ class _ThreadScreenState extends State<ThreadScreen> with WidgetsBindingObserver
     final parts = len <= single ? 1 : (len / per).ceil();
     return _FootGround(
       child: Padding(
-        padding: EdgeInsets.fromLTRB(t.space(2), t.space(2), t.space(2), t.space(2)),
+        padding: composerFootPadding(t),
         child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           // Both phones have Ghost Messaging and nothing has been exchanged: encryption is offered, until it is
           // turned on or the banner is dismissed (Matt, 2026-11-13: "a banner that can be dismissed asking the user
@@ -1380,9 +1405,6 @@ class _ThreadScreenState extends State<ThreadScreen> with WidgetsBindingObserver
           // laid out, so the keyboard stays up as it changes.
           Builder(builder: (context) {
             final typing = _text.text.isNotEmpty || editing;
-            final plus = Sms.can('sendPictures') && !_isGhost && !_byName
-                ? IconTap(icon: Lucide.plus, label: 'Add an attachment', size: 19, box: t.lenOf('2.25rem'), color: t.color('app-ink-2'), onPressed: editing || _attachments.length >= 5 ? null : _attach)
-                : null;
             final field = Listener(
                       behavior: HitTestBehavior.translucent,
                       onPointerDown: (e) => _fieldDown = e.position,
@@ -1437,44 +1459,25 @@ class _ThreadScreenState extends State<ThreadScreen> with WidgetsBindingObserver
                     ),
                       ),
                     ));
-            List<Widget> ends() => [
-                  if (Sms.remote)
-                    IconTap(
-                      icon: LucideMore.smile,
-                      label: 'Emoji',
-                      size: 19,
-                      box: t.lenOf('2.25rem'),
-                      color: t.color('app-ink-2'),
-                      onPressed: () {
-                        _focus.requestFocus();
-                        _field.currentState?.requestKeyboard();
-                        Sms.instance.emojiPanel().catchError((_) {});
-                      },
-                    ),
-                  // Stickers, while nothing is being written: once there are words the room is theirs.
-                  if (Sms.can('sendSticker') && !_isGhost && !_byName && !editing && _text.text.isEmpty && _attachments.isEmpty)
-                    IconTap(icon: Lucide.sticker, label: 'Stickers', size: 19, box: t.lenOf('2.25rem'), color: t.color('app-ink-2'), onPressed: _sending ? null : _sticker),
-                  SizedBox(width: t.space(1)),
-                  if (voiceOffered)
-                    IconTap(icon: Lucide.mic, label: 'Record a voice message', size: 19, box: t.lenOf('2.25rem'), color: t.color('app-ink-2'), onPressed: _sending ? null : _record)
-                  else
-                  editing
-                      ? IconTap(icon: Lucide.check, label: 'Save edit', filled: true, size: 16, box: t.lenOf('2.25rem'), onPressed: canSend ? _saveEdit : null)
-                      : IconTap(icon: Lucide.arrowUp, label: 'Send', filled: true, size: 19, box: t.lenOf('2.25rem'), onPressed: canSend ? _send : null),
-                ];
-            return ComposerBox(
-              field: field,
-              typing: typing,
-              plus: plus,
-              ends: ends(),
-              below: [
-                // The microphone beside Send while words are written (Matt, 2026-11-15: "Put the microphone for sending
-                // voice memos there too"): a voice message goes on its own, and the words stay in the field.
-                if (Sms.can('sendVoice') && !_isGhost && !_byName && !editing && _people.isNotEmpty)
-                  IconTap(icon: Lucide.mic, label: 'Record a voice message', size: 19, box: t.lenOf('2.25rem'), color: t.color('app-ink-2'), onPressed: _sending ? null : _record),
-                ...ends(),
-              ],
+            // The same buttons in the same places as every other conversation (lib/ui/composer_box.dart), each greyed out
+            // where this one can't do it.
+            final reach = !_isGhost && !_byName && !editing && _people.isNotEmpty;
+            final buttons = composerButtons(
+              t,
+              hasSomething: _text.text.isNotEmpty || _attachments.isNotEmpty || editing,
+              onAttach: Sms.can('sendPictures') && !_isGhost && !_byName && !editing && _attachments.length < 5 ? _attach : null,
+              onSticker: Sms.can('sendSticker') && reach && !_sending && _attachments.isEmpty ? _sticker : null,
+              onRecord: Sms.can('sendVoice') && reach && !_sending && _attachments.isEmpty ? _record : null,
+              onSend: canSend ? _send : null,
+              emoji: Sms.remote,
+              onEmoji: () {
+                _focus.requestFocus();
+                _field.currentState?.requestKeyboard();
+                Sms.instance.emojiPanel().catchError((_) {});
+              },
+              send: editing ? IconTap(key: const ValueKey('composer-send'), icon: Lucide.check, label: 'Save edit', filled: true, size: 16, box: t.lenOf('2.25rem'), onPressed: canSend ? _saveEdit : null) : null,
             );
+            return ComposerBox(field: field, typing: typing, plus: buttons.plus, ends: buttons.ends, below: buttons.below);
           }),
           if (!isMms && !editing && parts > 1)
             Padding(
