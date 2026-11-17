@@ -89,6 +89,9 @@ List<SettingsSection> _ownSections() => [
     summary: friendsSummary,
     page: friendsPane,
   ),
+  // Plugins (lib/plugins/settings.dart), near the top, under Me (Matt, 2026-11-17: "make the plugins towards the top of
+  // the settings page sidebar"): the band to the Plugins page, and each plugin's own settings, once the app has one.
+  ...pluginsSettings(),
   SettingsSection(
     id: 'appearance',
     label: 'Appearance',
@@ -190,8 +193,6 @@ List<SettingsSection> _ownSections() => [
     },
     page: (context, m) => [const VoicePane()],
   ),
-  // Plugins (lib/plugins/settings.dart): each with its switch and its own settings, once the app has one.
-  ...pluginsSettings(),
   SettingsSection(
     id: 'encryption',
     label: 'Encryption',
@@ -338,7 +339,7 @@ List<SettingsSection> _ownSections() => [
     ];
 
 /// The version this build is, where Android has not said (the screens drawn in tests).
-const appVersion = '0.8.11';
+const appVersion = '0.9.0';
 
 // --- Appearance -------------------------------------------------------------------------------------------------------
 
