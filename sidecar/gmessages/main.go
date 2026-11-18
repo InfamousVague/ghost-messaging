@@ -15,6 +15,7 @@
 //	{"id":12,"op":"pair_google","cookies":{"SID":"…",…}} → {} then events "emoji" (tap it in Google Messages on the
 //	                                                phone) and "paired", or "pair_failed": Google-account pairing, which
 //	                                                is what Google Messages offers now that QR pairing is gone.
+//	{"id":13,"op":"rename","conv":"…","name":"…"}  → {} (an RCS group's name, for everyone in it)
 //	{"id":10,"op":"activate"}                       → {} (this becomes Google Messages' active web session)
 //
 // Answers: {"id":1,"ok":{…}} or {"id":1,"error":"…"}. Events, unasked: {"ev":"ready"}, {"ev":"qr","url":"…"},
@@ -421,6 +422,24 @@ func do(r request) (any, error) {
 			}},
 		})
 		return nil, err
+	// An RCS group renamed for everyone in it, as Google Messages' Group details does (MMS groups have no name).
+	case "rename":
+		c, err := client()
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.UpdateConversation(ctx, &gmproto.UpdateConversationRequest{
+			Action:         gmproto.ConversationActionStatus_RENAME_GROUP,
+			ConversationID: r.Conv,
+			Data:           &gmproto.UpdateConversationRequest_RenameData{RenameData: &gmproto.RenameGroupData{Name: r.Name}},
+		})
+		if err != nil {
+			return nil, err
+		}
+		if !resp.GetSuccess() {
+			return nil, errors.New("Google Messages would not rename the group")
+		}
+		return map[string]any{}, nil
 	// One message deleted, as messages.google.com's Delete does.
 	case "delete_msg":
 		c, err := client()
@@ -681,6 +700,11 @@ func message(m *gmproto.Message) map[string]any {
 		reactions = append(reactions, map[string]any{"emoji": r.GetData().GetUnicode(), "from": r.GetParticipantIDs()})
 	}
 	status := m.GetMessageStatus().GetStatus().String()
+	// Google Messages' own lines about the conversation ("Texting with Jade (SMS/MMS)", a switch to RCS) are tombstones,
+	// not texts (Matt, 2026-11-17): marked so every client can leave them out.
+	if strings.Contains(strings.ToLower(status), "tombstone") {
+		status = "tombstone"
+	}
 	return map[string]any{
 		"id": m.GetMessageID(), "conv": m.GetConversationID(), "from": m.GetParticipantID(),
 		"me": strings.HasPrefix(status, "OUTGOING"), "text": strings.Join(text, "\n"),
