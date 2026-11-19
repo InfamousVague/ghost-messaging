@@ -23,6 +23,12 @@ class ReleaseNotes {
 }
 
 const List<ReleaseNotes> changelog = [
+  ReleaseNotes('0.9.31', '2026-11-19', [
+    'On a computer, Emoji in a space\'s or circle\'s chat opens your computer\'s emoji panel.',
+    'A circle\'s name, picture and back arrow sit inside its banner picture, clear of its rounded edges.',
+    'Sign up with Discord, Telegram or Signal: your username, name, picture and status are filled in from that account, and it\'s connected to Ghost as you go. Change anything before you continue.',
+    'Scrolling down a circle\'s spaces shrinks its banner to just the name and picture as you go, and it grows back at the top.',
+  ]),
   ReleaseNotes('0.9.30', '2026-11-19', [
     'Mac download: Ghost Messaging for the Mac is a disk image now, signed and checked by Apple. Open it and drag the app to Applications; it opens on any Mac without a warning.',
     'Friends show once each in Contacts and when you choose people to invite, not twice.',
