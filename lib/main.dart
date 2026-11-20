@@ -41,6 +41,7 @@ import 'voice/mention_alerts.dart';
 import 'voice/discord.dart';
 import 'voice/space_groups.dart';
 import 'sounds.dart';
+import 'keys.dart';
 import 'sms.dart';
 import 'ui/circles/circle_invite_card.dart' show openCircleLink;
 import 'ui/common.dart' show toast;
@@ -296,6 +297,8 @@ class _HomeState extends State<_Home> with WidgetsBindingObserver {
       final app = AppState.of(context);
       // The interface sounds (lib/sounds.dart) read the person's choices from here.
       Sounds.instance.start(app);
+      // The keyboard's commands and push to talk (lib/keys.dart).
+      Keys.instance.start(app);
       // The app's own network, friends, groups, voice and circles, and friends by username (lib/people.dart).
       startPeople(app);
       // Files spaces' files (lib/files/files_store.dart): what was going up when the app closed goes on, and files
@@ -425,13 +428,28 @@ class _HomeState extends State<_Home> with WidgetsBindingObserver {
     if (!_isDefault! || _walking) {
       _walking = true;
       return Onboarding(onDone: () {
-        setState(() => _walking = false);
+        // Texts skipped a moment ago: the app opens now, not after _check has looked again (until then _isDefault is
+        // still false, and the walkthrough would be drawn again over the account's first page).
+        final skipped = AppState.of(context).flag(textsSkippedKey, fallback: false);
+        setState(() {
+          _walking = false;
+          if (skipped) _isDefault = true;
+        });
         _check(first: true);
       });
     }
     // An iPhone of its own starts with a username (lib/standalone/welcome.dart); it is never asked to be the
     // default for texts, so the walkthrough above is not shown on one.
     if (Sms.standalone && Me.instance.username == null) return StandaloneWelcome(onDone: () => setState(() {}));
+    // A new Android install, past the texts step: the username and password next (Matt, 2026-11-20: "Yes, replace
+    // it"). After the texts step, since the relay server is dialled only once the app has started (_check).
+    final app = AppState.of(context);
+    if (app.flag(accountDueKey, fallback: false) && Me.instance.username == null) {
+      return StandaloneWelcome(onDone: () {
+        app.setFlag(accountDueKey, false);
+        setState(() {});
+      });
+    }
     // Past the welcome: an iPhone may be woken while closed (lib/standalone/wake.dart).
     if (Sms.standalone) IosWake.start();
     // The list, and what is opened from it beside it where the screen is wide enough (a folding phone opened out).

@@ -72,6 +72,7 @@ import 'package:ghost_messaging/ui/nav_bar.dart';
 import 'package:ghost_messaging/ui/new_group.dart';
 import 'package:ghost_messaging/ui/network.dart' show inviteText;
 import 'package:ghost_messaging/onboarding/onboarding.dart';
+import 'package:ghost_messaging/standalone/welcome.dart';
 import 'package:ghost_messaging/ui/shell.dart';
 import 'package:ghost_messaging/ui/sticker_picker.dart';
 import 'package:ghost_messaging/ui/thread.dart';
@@ -809,7 +810,7 @@ void main() {
       await _shoot(tester, sheet, const SettingsScreen(), '5-settings', dark: dark);
       await tester.enterText(find.byType(EditableText).first, 'read');
       await _shootAgain(tester, '5-settings-search', dark: dark);
-      for (final id in ['appearance', 'encryption', 'notifications', 'effects', 'keyboard', 'android', 'updates', 'computers', 'developer']) {
+      for (final id in ['appearance', 'encryption', 'notifications', 'effects', 'keyboard', 'shortcuts', 'android', 'updates', 'computers', 'developer']) {
         await _shoot(tester, sheet, SettingsSectionScreen(id), '5-settings-$id', dark: dark);
       }
       // Settings › Me and Friends joining: the number verified by a code texted to it, two accounts linked, X's
@@ -898,24 +899,20 @@ void main() {
       await _shoot(tester, sheet, const ThreadScreen(thread: 1, people: [Person(address: '+15551230001', name: 'Maya Chen')]), '9-background-dusk', dark: dark, prefs: const {'chat_bg': 'preset:dusk'});
       // The walkthrough (Matt, 2026-11-15: "Look at how we do onboarding on Ghost KBD and Ghost Markdown with the
       // optional voice guide through the elevenlabs key and the vibrant colors and iconography for each step, mimick
-      // this on the setup of Ghost Messaging"): the welcome, then the texts page, which holds Next until Ghost can send.
+      // this on the setup of Ghost Messaging"): since 2026-11-20 the texts page alone, which holds Continue until Ghost
+      // can send (Matt: "rework the onboarding flow to be very simple").
       _statusSaid = const {'isDefault': false, 'contacts': false, 'notifications': false, 'phone': true};
-      await _shoot(tester, sheet, const Onboarding(), '0-guide-1-welcome', dark: dark);
-      expect(find.text('Everyone, in one place'), findsOneWidget);
+      await _shoot(tester, sheet, const Onboarding(), '0-guide-2-texts', dark: dark);
+      expect(find.text('Set as default SMS app'), findsOneWidget);
       expect(find.byKey(const ValueKey('guide-skip')), findsNothing, reason: 'nothing to skip to before Ghost can send texts');
       await tester.tap(find.byKey(const ValueKey('guide-next')));
-      await _shootAgain(tester, '0-guide-2-texts', dark: dark);
-      expect(find.text('Set as default SMS app'), findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey('guide-next')));
       await _settle(tester);
-      expect(find.text('Start with your texts'), findsOneWidget, reason: 'Next waits until Ghost can send texts');
+      expect(find.text('Start with your texts'), findsOneWidget, reason: 'Continue waits until Ghost can send texts');
       // Google Messages on the phone and texts allowed, notification access not yet: the way to keep it, and RCS
       // (Matt, 2026-11-15: "I'd like to have a way that people can reliably get text in and out of ghost without
       // needing to switch the default messaging app").
       _statusSaid = const {'isDefault': false, 'contacts': true, 'notifications': true, 'phone': true, 'gmInstalled': true, 'sms': true, 'bridge': false};
       await _shoot(tester, sheet, const Onboarding(), '0-guide-2-texts-beside', dark: dark);
-      await tester.tap(find.byKey(const ValueKey('guide-next')));
-      await _shootAgain(tester, '0-guide-2-texts-beside', dark: dark);
       expect(find.text('Or keep Google Messages, and RCS'), findsOneWidget);
       expect(find.text('Use beside Google Messages'), findsOneWidget);
       // Setting up RCS from Settings › Messages (lib/ui/rcs_setup.dart; Matt, 2026-11-15: "add a button under messages
@@ -974,20 +971,19 @@ void main() {
       await tester.pump(const Duration(seconds: 4));
       VideoEngine.make = VideoEngine.defaultEngine;
       _gmWeb = const {'available': true, 'running': true, 'paired': false, 'connected': false};
-      // Ghost is the texting app: each page after, in turn.
+      // Ghost is the texting app: the texts page says so, and Continue (the walkthrough is that page alone since
+      // 2026-11-20).
       _statusSaid = const {'isDefault': true, 'contacts': false, 'notifications': false, 'phone': true};
-      await _shoot(tester, sheet, const Onboarding(), '0-guide-1-welcome', dark: dark);
+      await _shoot(tester, sheet, const Onboarding(), '0-guide-2-texts-done', dark: dark);
       expect(find.byKey(const ValueKey('guide-skip')), findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey('guide-next')));
-      await _settle(tester);
       expect(find.text('Ghost is your texting app.'), findsOneWidget);
-      for (final (i, page) in [(3, 'together'), (4, 'calls'), (5, 'everywhere'), (6, 'start')]) {
-        await tester.tap(find.byKey(const ValueKey('guide-next')));
-        await _shootAgain(tester, '0-guide-$i-$page', dark: dark);
-      }
-      expect(find.text('You\'re in'), findsOneWidget);
-      expect(find.text('Say hi'), findsOneWidget);
+      expect(find.text('Continue'), findsOneWidget);
       _statusSaid = const {'isDefault': true, 'contacts': true, 'notifications': false, 'phone': true};
+      // Then the first page of one's own: a username and a password, and signing in to an account one has as a section
+      // on the same page (Matt, 2026-11-20).
+      await _shoot(tester, sheet, StandaloneWelcome(onDone: () {}), '0-welcome', dark: dark);
+      expect(find.text('Already have an account?'), findsOneWidget);
+      expect(find.byKey(const ValueKey('welcome-sign-in')), findsOneWidget);
       // Each effect at a moment of its run, over the conversation.
       const night = {ScreenEffect.fireworks, ScreenEffect.celebration, ScreenEffect.lasers, ScreenEffect.snow, ScreenEffect.goodNight, ScreenEffect.party, ScreenEffect.spotlight};
       for (final effect in ScreenEffect.values) {
@@ -2095,6 +2091,28 @@ void main() {
         expect(ring(id), findsOneWidget, reason: 'the pill has $id');
       }
       expect(shown(), 'messages');
+      // The keyboard's commands go where they say, from anywhere in the frame (lib/keys.dart; Matt, 2026-11-20: "add
+      // push to talk and full keyboard commands with a keyboard shortcuts setting in settings").
+      if (!dark) {
+        final primary = Platform.isMacOS ? LogicalKeyboardKey.metaLeft : LogicalKeyboardKey.controlLeft;
+        Future<void> keys(LogicalKeyboardKey key) async {
+          await tester.sendKeyDownEvent(primary);
+          await tester.sendKeyEvent(key);
+          await tester.sendKeyUpEvent(primary);
+          await _settle(tester);
+        }
+
+        await keys(LogicalKeyboardKey.digit2);
+        expect(shown(), 'contacts');
+        await keys(LogicalKeyboardKey.digit3);
+        expect(shown(), 'archive');
+        await keys(LogicalKeyboardKey.digit1);
+        expect(shown(), 'messages');
+        await keys(LogicalKeyboardKey.slash);
+        expect(find.text('Push to talk'), findsWidgets, reason: 'the shortcuts page itself');
+        await keys(LogicalKeyboardKey.digit1);
+        expect(shown(), 'messages');
+      }
       expect(tester.widget<NavPill>(find.byType(NavPill)).items.firstWhere((i) => i.id == 'archive').count, 1);
       expect(icon('New'), findsNothing, reason: 'the header holds nothing the pill does');
       expect(tester.getTopRight(find.byType(ConversationsScreen)).dx, side);
