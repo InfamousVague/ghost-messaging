@@ -7,6 +7,7 @@ import 'package:ghost_relay/handles.dart';
 import 'package:ghost_relay/pushes.dart';
 import 'package:ghost_relay/hub.dart';
 import 'package:ghost_relay/invites.dart';
+import 'package:ghost_relay/invite_words.dart';
 import 'package:ghost_relay/relay.dart';
 
 /// `dart run bin/relay.dart [--host 127.0.0.1] [--port 8787] [--data relay-data] [--verbose]`
@@ -43,10 +44,14 @@ Future<void> main(List<String> args) async {
   // Ghost accounts' sealed backups, by address (accounts.dart; Matt, 2026-11-17: "We need to have a way to login to
   // existing accounts"): usernames and the texted code for a verified number are handles'.
   final accounts = Accounts(dataDir: data, handles: handles, verbose: verbose);
+  // The account each identity belongs to, on the admin page (handles.dart, accountOf).
+  handles.accountOf = accounts.accountOf;
   // The app's Share feedback, filed in a Notion board (feedback.dart): the integration's secret and the board from the
   // environment (GHOST_NOTION_TOKEN, GHOST_NOTION_FEEDBACK); without them it says it isn't set up.
-  final feedback = Feedback(config: FeedbackConfig.fromEnvironment(Platform.environment), ownsName: handles.ownsName, verbose: verbose);
-  final relay = Relay(dataDir: data, verbose: verbose, hub: Hub(verbose: verbose, handles: handles, pushes: pushes, invites: invites, accounts: accounts), files: files, feedback: feedback);
+  final feedback = Feedback(config: FeedbackConfig.fromEnvironment(Platform.environment), ownsName: handles.ownsName, accountOf: accounts.accountOf, verbose: verbose);
+  // Circles' invite words (invite_words.dart): gogho.st/c/<word>.
+  final words = InviteWords(dataDir: data);
+  final relay = Relay(dataDir: data, verbose: verbose, hub: Hub(verbose: verbose, handles: handles, pushes: pushes, invites: invites, accounts: accounts, words: words), files: files, feedback: feedback);
   final got = await relay.start(host: host, port: port);
   stdout.writeln('Ghost Messaging relay listening on ws://$host:$got (${relay.channelCount} pairings kept; ${handles.linked} handles linked; ${files.spaces} Files spaces; sign-ins: ${handles.ways.entries.where((e) => e.value == 'signin').map((e) => e.key).join(', ').padRight(1, '-')})');
   for (final signal in [ProcessSignal.sigint, ProcessSignal.sigterm]) {

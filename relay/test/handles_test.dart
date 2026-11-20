@@ -184,6 +184,48 @@ void main() {
   // Matt, 2026-11-19: "Build a new points system into the app called souls ... a simple admin page for me to login to
   // ... make sure only my matt account can access it and allow me to see all users who signed up on the relay and issue
   // special badges and souls".
+  // Matt, 2026-11-20: "add the ability to tie users names to their accounts when they sign back in later or reconnect to
+  // the app so that we can give out bug bounties properly".
+  test('the admin list names people as their names are said, keeps names given up, and shows each one\'s account', () async {
+    const salt = '0123456789abcdef0123456789abcdef';
+    final adminConfig = HandlesConfig(adminUser: 'wisp-keeper-1a2b', adminHash: '$salt:${Handles.adminHashOf(salt, 'open sesame')}');
+    final a = Handles(dataDir: dir, config: adminConfig, fetch: net.fetch)..load();
+    a.accountOf = (id) => id == bob ? '0x00000000000000000000000000000000000000b0' : null;
+    for (final id in [alice, bob, carol]) {
+      come(a, id);
+    }
+    await a.said(alice, {'dir': 'claim', 'name': 'matt'});
+    await a.said(bob, {'dir': 'claim', 'name': 'bob_builder'});
+    // Bob takes another name: the first is kept as one he held.
+    await a.said(bob, {'dir': 'claim', 'name': 'bobby'});
+    await a.said(alice, {'dir': 'admin-login', 'user': 'wisp-keeper-1a2b', 'pass': 'open sesame'});
+    Map users() => {for (final u in (last(alice, 'admin-users')!['users'] as List).cast<Map>()) u['id']: u};
+    await a.said(alice, {'dir': 'admin-users'});
+    expect(users()[bob]['name'], 'bobby');
+    expect(users()[bob]['was'], ['bob_builder']);
+    expect(users()[bob]['account'], '0x00000000000000000000000000000000000000b0');
+    expect(users()[alice].containsKey('account'), isFalse);
+
+    // A name the list has only as a hash (claimed on an older app, which never says it): named once anyone looks it up.
+    a.save();
+    final again = Handles(dataDir: dir, config: adminConfig, fetch: net.fetch)..load();
+    for (final id in [alice, bob, carol]) {
+      come(again, id);
+    }
+    again.forgetShownForTest(bob);
+    await again.said(alice, {'dir': 'admin-login', 'user': 'wisp-keeper-1a2b', 'pass': 'open sesame'});
+    await again.said(alice, {'dir': 'admin-users'});
+    expect(users()[bob]['name'], isNull);
+    await again.said(carol, {'dir': 'whois', 'name': 'Bobby'});
+    await again.said(alice, {'dir': 'admin-users'});
+    expect(users()[bob]['name'], 'bobby');
+    expect(users()[bob]['was'], ['bob_builder'], reason: 'kept across a restart');
+    // A name nobody holds is not learned.
+    again.learnName('nobody_here');
+    await again.said(alice, {'dir': 'admin-users'});
+    expect(users().values.where((u) => u['name'] == 'nobody_here'), isEmpty);
+  });
+
   test('souls and special badges: only @matt with the admin password gives them; each person is told', () async {
     const salt = '0123456789abcdef0123456789abcdef';
     final adminConfig = HandlesConfig(adminUser: 'wisp-keeper-1a2b', adminHash: '$salt:${Handles.adminHashOf(salt, 'open sesame')}');
@@ -242,6 +284,34 @@ void main() {
     }
     await again.said(alice, {'dir': 'admin-login', 'user': 'wisp-keeper-1a2b', 'pass': 'open sesame'});
     expect(last(alice, 'admin'), containsPair('ok', false));
+  });
+
+  // Matt, 2026-11-20: "allow the user to choose one badge to showcase next to their names don't show them all".
+  test('one badge shown beside a name: the one its holder chose of theirs, else their highest', () async {
+    const salt = '0123456789abcdef0123456789abcdef';
+    final adminConfig = HandlesConfig(adminUser: 'k', adminHash: '$salt:${Handles.adminHashOf(salt, 'pw')}');
+    final a = Handles(dataDir: dir, config: adminConfig, fetch: net.fetch)..load();
+    for (final id in [alice, bob, carol]) {
+      come(a, id);
+    }
+    await a.said(alice, {'dir': 'claim', 'name': 'matt'});
+    await a.said(bob, {'dir': 'claim', 'name': 'bob_builder'});
+    await a.said(alice, {'dir': 'admin-login', 'user': 'k', 'pass': 'pw'});
+    await a.said(alice, {'dir': 'admin-badge', 'to': bob, 'badge': 'alpha', 'on': true});
+    await a.said(alice, {'dir': 'admin-badge', 'to': bob, 'badge': 'bughunter', 'on': true});
+    await a.said(carol, {'dir': 'badges', 'ids': [bob], 'names': ['bob_builder']});
+    expect(last(carol, 'badges')!['show'], {bob: 'bughunter'}, reason: 'none chosen: the highest');
+    await a.said(bob, {'dir': 'showcase', 'badge': 'alpha'});
+    expect(last(bob, 'souls'), containsPair('show', 'alpha'));
+    await a.said(carol, {'dir': 'badges', 'ids': [bob], 'names': ['bob_builder']});
+    expect(last(carol, 'badges')!['show'], {bob: 'alpha'});
+    expect(last(carol, 'badges')!['showNames'], {'bob_builder': 'alpha'});
+    await a.said(bob, {'dir': 'showcase', 'badge': 'team'});
+    expect(last(bob, 'err'), containsPair('about', 'showcase'), reason: 'not one of his');
+    // Kept across a restart.
+    a.save();
+    final again = Handles(dataDir: dir, config: adminConfig, fetch: net.fetch)..load();
+    expect(again.showcaseOf(bob), 'alpha');
   });
 
   test('an install says its own username as it says hello, and the admin list names it', () async {

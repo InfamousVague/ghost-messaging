@@ -121,9 +121,59 @@ class Handles {
   /// one that install holds.
   final Map<String, String> _shown = {};
 
+  /// The usernames each install held before its present one, newest last, at most [wasKept] (Matt, 2026-11-20: "add the
+  /// ability to tie users names to their accounts when they sign back in later or reconnect to the app so that we can give
+  /// out bug bounties properly"): a ticket filed under a name since given up still finds its person.
+  final Map<String, List<String>> _was = {};
+  static const wasKept = 10;
+
+  /// The Ghost account an install's identity belongs to (relay/lib/accounts.dart, Accounts.accountOf), for the admin page:
+  /// the same person across a reinstall or another device, where they signed back in to it. Set by bin/relay.dart.
+  String? Function(String id)? accountOf;
+
+  /// [name] said in words (a lookup, a sign-in by username, a hello): where it is a username held here, the admin page
+  /// can show it from now on. The directory itself keeps only its hash.
+  void learnName(String name) {
+    if (!goodName(name)) return;
+    final k = nameKey(name);
+    if (_names[k] == null || _shown[k] == tidyName(name)) return;
+    _shown[k] = tidyName(name);
+    _changed();
+  }
+
+  /// For a test: [id]'s username as though it were claimed on an app that never said it.
+  void forgetShownForTest(String id) {
+    final k = _nameOf[id];
+    if (k != null) _shown.remove(k);
+  }
+
+  /// Keeps [k]'s shown name as one [id] held before.
+  void _remember(String id, String? k) {
+    final name = k == null ? null : _shown[k];
+    if (name == null) return;
+    final list = _was[id] ??= [];
+    list
+      ..remove(name)
+      ..add(name);
+    if (list.length > wasKept) list.removeAt(0);
+  }
+
   /// Souls by install, and its special badges (ids from [specialBadges]).
   final Map<String, int> _souls = {};
   final Map<String, List<String>> _special = {};
+
+  /// The one badge each person shows beside their name, of those they have (Matt, 2026-11-20: "allow the user to choose
+  /// one badge to showcase next to their names don't show them all"); their highest where they chose none.
+  final Map<String, String> _showcase = {};
+
+  /// The badge [id] shows beside their name: the one they chose while they have it, else their first; null for none.
+  String? showcaseOf(String id) {
+    final have = _special[id];
+    if (have == null || have.isEmpty) return null;
+    final chosen = _showcase[id];
+    if (chosen != null && have.contains(chosen)) return chosen;
+    return [for (final b in specialBadges) if (have.contains(b)) b].firstOrNull ?? have.first;
+  }
 
   /// What the admin gave, newest last, at most [grantsKept]: {at, to, souls or badge, why}.
   final List<Map<String, Object?>> _grants = [];
@@ -173,6 +223,7 @@ class Handles {
         'dir': 'souls',
         'n': soulsOf(id),
         'special': specialOf(id),
+        'show': ?showcaseOf(id),
         'got': ?got,
         'why': ?why,
         'badge': ?badge,
@@ -202,6 +253,8 @@ class Handles {
         'souls': soulsOf(id),
         'special': specialOf(id),
         'here': _here.containsKey(id),
+        'account': ?accountOf?.call(id),
+        if (_was[id]?.isNotEmpty ?? false) 'was': _was[id],
       });
     }
     out.sort((a, b) => '${b['at'] ?? ''}'.compareTo('${a['at'] ?? ''}'));
@@ -345,8 +398,10 @@ class Handles {
         (all['names'] as Map? ?? const {}).forEach((k, v) => _names[k as String] = (v as Map).cast<String, String>());
         (all['kept'] as Map? ?? const {}).forEach((id, blob) => _kept[id as String] = blob as String);
         (all['shown'] as Map? ?? const {}).forEach((k, name) => _shown[k as String] = name as String);
+        (all['was'] as Map? ?? const {}).forEach((id, names) => _was[id as String] = [for (final n in names as List) '$n']);
         (all['souls'] as Map? ?? const {}).forEach((id, n) => _souls[id as String] = (n as num).toInt());
         (all['special'] as Map? ?? const {}).forEach((id, list) => _special[id as String] = (list as List).cast<String>().toList());
+        (all['showcase'] as Map? ?? const {}).forEach((id, b) => _showcase[id as String] = b as String);
         _grants.addAll([for (final g in (all['grants'] as List? ?? const [])) (g as Map).cast<String, Object?>()]);
       }
     } catch (_) {
@@ -387,8 +442,10 @@ class Handles {
         'names': _names,
         'kept': _kept,
         'shown': _shown,
+        'was': _was,
         'souls': _souls,
         'special': _special,
+        'showcase': _showcase,
         'grants': _grants,
       }));
       tmp.renameSync(file.path);
@@ -521,13 +578,17 @@ class Handles {
           if (before != null && before != k) _names.remove(before);
           _names[k] = {'id': id, 'key': key, 'at': _now().toUtc().toIso8601String().substring(0, 10)};
           _nameOf[id] = k;
-          if (before != null && before != k) _shown.remove(before);
+          if (before != null && before != k) {
+            _remember(id, before);
+            _shown.remove(before);
+          }
           _shown[k] = tidyName(name);
           _changed();
           tell({'dir': 'claim', 'name': tidyName(name), 'ok': true, 'k': k});
         case 'release':
           final k = _nameOf.remove(id);
           if (k != null) {
+            _remember(id, k);
             _names.remove(k);
             _shown.remove(k);
           }
@@ -543,6 +604,9 @@ class Handles {
           list.add(now);
           final found = _names[nameKey(name)];
           if (found == null) return tell({'dir': 'whois', 'name': tidyName(name), 'none': true});
+          // Looked up in words: the admin page can name its holder from now on, an install on an older app that never
+          // says its own name too.
+          learnName(name);
           tell({'dir': 'whois', 'name': tidyName(name), 'id': found['id'], 'key': found['key']});
         case 'badges':
           // Which of these verified a phone number by a texted code: the verified-number badge beside people in spaces
@@ -560,6 +624,14 @@ class Handles {
             'ids': [for (final x in ids) if (phoneKeyOf(x) != null) x],
             'names': [for (final n in names) if (_names[nameKey(n)] case final found? when found['id'] is String && phoneKeyOf(found['id'] as String) != null) n],
             // The special badges the admin gave (souls are each person's own and not told to others).
+            // The one each shows beside their name.
+            if (ids.any((x) => showcaseOf(x) != null)) 'show': {for (final x in ids) if (showcaseOf(x) case final String b) x: b},
+            if (names.any((n) => _names[nameKey(n)]?['id'] is String && showcaseOf(_names[nameKey(n)]!['id']!) != null))
+              'showNames': {
+                for (final n in names)
+                  if (_names[nameKey(n)]?['id'] case final String holder)
+                    if (showcaseOf(holder) case final String b) n: b,
+              },
             // Each said only where someone asked of has one.
             if (ids.any((x) => _special[x]?.isNotEmpty ?? false)) 'special': {for (final x in ids) if (_special[x]?.isNotEmpty ?? false) x: _special[x]},
             if (names.any((n) => _special[_names[nameKey(n)]?['id']]?.isNotEmpty ?? false))
@@ -569,6 +641,17 @@ class Handles {
               },
           });
         case 'souls?':
+          tell(_soulsMessage(id));
+        case 'showcase':
+          // The badge to show beside one's name: one of one's own, or '' for one's highest.
+          final b = said['badge'];
+          if (b is! String || (b.isNotEmpty && !(_special[id]?.contains(b) ?? false))) return err('That badge isn\'t yours.');
+          if (b.isEmpty) {
+            _showcase.remove(id);
+          } else {
+            _showcase[id] = b;
+          }
+          _changed();
           tell(_soulsMessage(id));
         case 'admin-login':
           final now = _now();
