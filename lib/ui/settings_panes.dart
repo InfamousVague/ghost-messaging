@@ -5,6 +5,7 @@ library;
 import 'whats_new.dart' show showWhatsNew;
 import '../api/remote.dart';
 import '../api/server.dart';
+import 'admin_page.dart' show adminOffered, adminPane;
 import 'api_pane.dart';
 import '../inbox/inbox.dart';
 import 'blocking.dart';
@@ -320,6 +321,19 @@ List<SettingsSection> _ownSections() => [
     summary: (m) => [if (ApiServer.on(m.app)) 'On this phone', if (ApiRemote.on(m.app)) 'Through the relay'].join(' · ').ifEmptyThen('Off'),
     page: apiPane,
   ),
+  // Settings › Admin: souls and special badges given out, for @matt alone in developer mode (lib/ui/admin_page.dart;
+  // Matt, 2026-11-19: "a simple admin page for me to login to ... hidden behind developer mode").
+  SettingsSection(
+    id: 'admin',
+    where: SettingsWhere.everywhere,
+    label: 'Admin',
+    icon: _icon(Lucide.shieldCheck),
+    hue: 'coral',
+    group: 'app',
+    when: adminOffered,
+    summary: (m) => 'Souls and badges',
+    page: adminPane,
+  ),
   SettingsSection(
     id: 'about',
     // The phone app's; a computer's is under "This Mac".
@@ -334,7 +348,7 @@ List<SettingsSection> _ownSections() => [
     ];
 
 /// The version this build is, where Android has not said (the screens drawn in tests).
-const appVersion = '0.9.36';
+const appVersion = '0.9.37';
 
 // --- Appearance -------------------------------------------------------------------------------------------------------
 
