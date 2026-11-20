@@ -224,7 +224,7 @@ class _InboxChatScreenState extends State<InboxChatScreen> with WidgetsBindingOb
     _focus.requestFocus();
     _field.currentState?.requestKeyboard();
   }
-  bool _wasTyping = false;
+  final _draft = ValueNotifier((typing: false, hasWords: false));
 
   /// Files to go with the next message, by their paths on this device (Matt, 2026-11-15: "Is it possible to send and
   /// receive attachments through telegram too?"), and the voice message being recorded: its most seconds.
@@ -301,8 +301,8 @@ class _InboxChatScreenState extends State<InboxChatScreen> with WidgetsBindingOb
     setState(() => _recording = null);
   }
   void _typed() {
-    final typing = _text.text.isNotEmpty;
-    if (typing != _wasTyping && mounted) setState(() => _wasTyping = typing);
+    final text = _text.text;
+    _draft.value = (typing: text.isNotEmpty, hasWords: text.trim().isNotEmpty);
   }
 
   /// Pressed and held: copy it, or delete it, for this account or, where the network allows, for everyone (Matt,
@@ -380,6 +380,7 @@ class _InboxChatScreenState extends State<InboxChatScreen> with WidgetsBindingOb
     _n.watching = null;
     if (InboxAlerts.showing == '${_n.id}:${widget.chatId}') InboxAlerts.showing = null;
     _text.removeListener(_typed);
+    _draft.dispose();
     _text.dispose();
     _focus.dispose();
     _scroll.dispose();
@@ -510,14 +511,14 @@ class _InboxChatScreenState extends State<InboxChatScreen> with WidgetsBindingOb
                 ),
               // The same box as a conversation of texts (lib/ui/composer_box.dart; Matt, 2026-11-15: "Also use the same
               // composer for telegram"): words alone here, so no + or microphone, and Send at its end.
-              Builder(builder: (context) {
+              ValueListenableBuilder(valueListenable: _draft, builder: (context, draft, _) {
                 final style = composerTextStyle(t);
                 final strut = composerStrutStyle(t);
                 final enterSends = app.enterSends;
                 // Laid out as a conversation of texts is (Matt, 2026-11-15: "The compose window should also use the exact same
                 // layout as messages"): + at its start, the microphone while it is empty, Send once there is something.
                 final files = _n.canSendFiles;
-                final canSend = (_text.text.trim().isNotEmpty || _files.isNotEmpty) && !_sendingFiles;
+                final canSend = (draft.hasWords || _files.isNotEmpty) && !_sendingFiles;
                 final voice = files && !Sms.remote;
                 if (_recording != null) {
                   return VoiceRecorder(limit: _recording!, onDiscard: _discardVoice, onSend: _sendVoice);
@@ -527,7 +528,7 @@ class _InboxChatScreenState extends State<InboxChatScreen> with WidgetsBindingOb
                 final ScheduleTarget schedule = (kind: 'inbox', target: '${_n.id}:${widget.chatId}', who: chat?.title ?? _n.name);
                 final buttons = composerButtons(
                   t,
-                  hasSomething: _text.text.isNotEmpty || _files.isNotEmpty,
+                  hasSomething: draft.typing || _files.isNotEmpty,
                   onAttach: files && _files.length < 10 ? _attach : null,
                   onSticker: files && _files.isEmpty && !_sendingFiles ? _sticker : null,
                   onRecord: voice && _files.isEmpty ? _record : null,
@@ -560,7 +561,7 @@ class _InboxChatScreenState extends State<InboxChatScreen> with WidgetsBindingOb
                   if (_files.isNotEmpty) _FilesStrip(files: _files, onRemove: (f) => setState(() => _files.remove(f))),
                   ScheduledStrip(to: schedule),
                   ComposerBox(
-                  typing: _text.text.isNotEmpty,
+                  typing: draft.typing,
                   plus: buttons.plus,
                   ends: buttons.ends,
                   below: buttons.below,
@@ -581,7 +582,7 @@ class _InboxChatScreenState extends State<InboxChatScreen> with WidgetsBindingOb
                         child: Padding(
                           padding: EdgeInsets.symmetric(vertical: t.lenOf('0.3rem')),
                           child: Stack(children: [
-                            if (_text.text.isEmpty)
+                            if (!draft.typing)
                               IgnorePointer(child: Text('Message on ${_n.name}', style: style.copyWith(color: t.color('app-ink-3')), strutStyle: strut, textHeightBehavior: composerLeading)),
                             // A picture pasted on a computer goes with the message, as one added with + does
                             // (lib/ui/paste_images.dart; Matt, 2026-11-20: "pasting a screenshot into the compose bar

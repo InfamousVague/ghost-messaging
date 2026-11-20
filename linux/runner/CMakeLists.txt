@@ -20,7 +20,9 @@ apply_standard_settings(${BINARY_NAME})
 add_definitions(-DAPPLICATION_ID="${APPLICATION_ID}")
 
 # Add dependency libraries. Add any application-specific dependencies here.
-target_link_libraries(${BINARY_NAME} PRIVATE flutter)
+# libmpv's LuaJIT uses the system unwinder. Load it before the Flutter engine,
+# which also exports _Unwind_RaiseException and can crash LuaJIT during playback.
+target_link_libraries(${BINARY_NAME} PRIVATE "-Wl,--push-state,--no-as-needed" gcc_s "-Wl,--pop-state" flutter)
 target_link_libraries(${BINARY_NAME} PRIVATE PkgConfig::GTK)
 
 target_include_directories(${BINARY_NAME} PRIVATE "${CMAKE_SOURCE_DIR}")

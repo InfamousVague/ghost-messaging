@@ -1,23 +1,36 @@
 #!/bin/sh
 # Builds the Signal helper (sidecar/signal, on mautrix-signal's signalmeow and Signal's libsignal, AGPL-3.0):
 #   build/signal-sidecar/mac/signal-sidecar           Apple silicon
+#   build/signal-sidecar/linux/signal-sidecar         native Linux
 #   build/signal-sidecar/android/libsignalsidecar.so  the phone's (an executable named as a library, as libgmsidecar.so is)
 # libsignal (Rust) is built first from github.com/signalapp/libsignal at the commit mautrix-signal pins, into
 # build/signal/libsignal (protoc and cmake are needed; rustup fetches libsignal's own Rust).
 #
 # Signal is Coming soon (lib/inbox/inbox.dart), so the phone's copy goes to build/, not android/.../jniLibs, which
 # would pack it into every APK; `android --ship` puts it there for a build that is to carry it.
-# Usage: tool/build-signalsidecar.sh [mac|android] [--ship]
+# Usage: tool/build-signalsidecar.sh [mac|linux|android] [--ship]
 set -e
 root=$(cd "$(dirname "$0")/.." && pwd)
 pin=904c8dc8216073b078a5f2f5090e3da8382e6a92   # mautrix-signal main 23093d82 (2026-11-16)'s pkg/libsignalgo/libsignal (v0.106.1)
 lib="$root/build/signal/libsignal"
 out="$root/build/signal-sidecar"
 want=${1:-mac}
-if [ ! -d "$lib" ]; then git clone -q https://github.com/signalapp/libsignal "$lib"; fi
-(cd "$lib" && git fetch -q --depth 1 origin $pin && git checkout -q $pin)
+if [ ! -d "$lib/.git" ]; then
+  git init -q "$lib"
+  git -C "$lib" remote add origin https://github.com/signalapp/libsignal
+fi
+if ! git -C "$lib" cat-file -e "$pin^{commit}" 2>/dev/null; then
+  git -C "$lib" fetch -q --depth 1 origin "$pin"
+fi
+git -C "$lib" checkout -q "$pin"
 flags="-trimpath -ldflags=-s"
 rust() { (cd "$lib" && RUSTFLAGS="-Ctarget-feature=-crt-static" RUSTC_WRAPPER="" cargo build -q -p libsignal-ffi --profile=release --target "$1"); }
+if [ "$want" = linux ]; then
+  (cd "$lib" && CARGO_TARGET_DIR="$lib/target" RUSTC_WRAPPER="" cargo build --locked --release -p libsignal-ffi)
+  mkdir -p "$out/linux"
+  (cd "$root/sidecar/signal" && CGO_ENABLED=1 LIBRARY_PATH="$lib/target/release" go build $flags -o "$out/linux/signal-sidecar" .)
+  echo "ok $out/linux/signal-sidecar"
+fi
 if [ "$want" = mac ]; then
   rust aarch64-apple-darwin
   mkdir -p "$out/mac"

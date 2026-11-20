@@ -109,13 +109,16 @@ class Signal extends InboxNetwork {
       try {
         binary = await const MethodChannel('ghost_messaging/sms').invokeMethod<String>('helperPath', {'name': 'signalsidecar'});
       } catch (_) {}
-    } else if (Platform.isMacOS || Platform.isWindows) {
+    } else if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
       final named = Platform.environment['GHOST_SIGNALSIDECAR'];
       final exe = File(Platform.resolvedExecutable).parent.path;
       for (final c in [
         ?named,
-        if (Platform.isWindows) '$exe\\signal-sidecar.exe' else '$exe/../Helpers/signal-sidecar',
-        '${Directory.current.path}/build/signal-sidecar/${Platform.isWindows ? 'windows/signal-sidecar.exe' : 'mac/signal-sidecar'}',
+        if (Platform.isLinux) '$exe/signal-sidecar',
+        if (Platform.isWindows) '$exe\\signal-sidecar.exe',
+        if (Platform.isMacOS) '$exe/../Helpers/signal-sidecar',
+        if (!Platform.isLinux)
+          '${Directory.current.path}/build/signal-sidecar/${Platform.isWindows ? 'windows/signal-sidecar.exe' : 'mac/signal-sidecar'}',
       ]) {
         if (File(c).existsSync()) {
           binary = c;

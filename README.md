@@ -1614,6 +1614,21 @@ choice (the phone's default SMS SIM is used), and a backup.
 
 ## Building
 
+### Linux desktop
+
+Install the Flutter Linux toolchain (Clang, CMake, Ninja, pkg-config and GTK 3 development files), plus the libmpv and libepoxy development files for video playback. On Arch Linux the video dependencies are `mpv` and `libepoxy`. On Debian and Ubuntu they are `libmpv-dev` and `libepoxy-dev`.
+
+The build also compiles the Signal linked-device helper with Go 1.26 or later, a C/C++ compiler, rustup and protoc. The first build downloads the pinned libsignal source and its Rust toolchain.
+
+```sh
+flutter run -d linux
+flutter build linux --release
+```
+
+On x86-64, run `build/linux/x64/release/bundle/ghost-messaging`. Copy the whole bundle when moving the app so the executable can find `signal-sidecar`, `lib/` and `data/` beside it.
+
+### Other builds and tests
+
 ```sh
 flutter pub get
 flutter build apk --release --target-platform android-arm64   # build/app/outputs/flutter-apk/app-release.apk
