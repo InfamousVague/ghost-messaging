@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 
 import '../app_state.dart';
 import '../kept_lists.dart';
+import 'account_helper.dart';
 import 'bluesky.dart';
 import 'google_chat.dart';
 import 'mastodon.dart';
@@ -479,15 +480,49 @@ abstract class InboxNetwork extends ChangeNotifier {
   // in a list of Ghost's own on this device, so they are gone from here all the same.
 
   /// The chats the list shows: [chats] without those in Ghost's own lists (archived, deleted or blocked here).
+  ///
+  /// Worked out once for each change ([stamp]) and each state of those lists, not at every asking: the list of
+  /// conversations asks several times a build, and a network's [chats] may itself be made anew each time
+  /// (docs/performance-audit.md, finding 2).
   List<InboxChat> get shownChats {
+    final key = '$stamp|${_raw('archived')}|${_raw('deleted')}|${_raw('blocked')}';
+    if (key == _shownKey && _shown != null) return _shown!;
     final gone = {...localList('archived'), ...localList('deleted'), ...localList('blocked')};
-    return gone.isEmpty ? chats : [for (final c in chats) if (!gone.contains(c.id)) c];
+    _shownKey = key;
+    return _shown = gone.isEmpty ? chats : [for (final c in chats) if (!gone.contains(c.id)) c];
   }
+
+  String? _shownKey, _archivedKey;
+  List<InboxChat>? _shown, _archivedList;
 
   /// The chats archived: the network's own archive, or Ghost's list for it.
   List<InboxChat> get archivedChats {
+    final key = '$stamp|${_raw('archived')}';
+    if (key == _archivedKey && _archivedList != null) return _archivedList!;
     final kept = localList('archived');
-    return kept.isEmpty ? const [] : [for (final c in chats) if (kept.contains(c.id)) c];
+    _archivedKey = key;
+    return _archivedList = kept.isEmpty ? const [] : [for (final c in chats) if (kept.contains(c.id)) c];
+  }
+
+  /// Whether two lists of chats would draw the same rows: a network that asks its service every so often tells its
+  /// listeners only when the answer differs from the last, where every asking drew the whole list of conversations
+  /// again for nothing (docs/performance-audit.md, finding 8).
+  static bool sameChats(List<InboxChat> a, List<InboxChat> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      final x = a[i], y = b[i];
+      if (x.id != y.id || x.title != y.title || x.snippet != y.snippet || x.unread != y.unread || x.date != y.date || x.avatar != y.avatar || x.lastFromMe != y.lastFromMe || x.group != y.group || x.pinned != y.pinned || x.muted != y.muted) return false;
+    }
+    return true;
+  }
+
+  /// Goes up each time this network tells its listeners anything: what was worked out from it is worked out again.
+  int stamp = 0;
+
+  @override
+  void notifyListeners() {
+    stamp++;
+    super.notifyListeners();
   }
 
   /// Moves [chatId] into the archive, or out of it.
@@ -595,10 +630,23 @@ abstract class InboxNetwork extends ChangeNotifier {
   AppState? listStore;
 
   /// One of Ghost's own lists for this network ("archived", "deleted", "deleted_msg_<chat>").
-  Set<String> localList(String what) => (listStore?.choice('inbox_${id}_$what', '') ?? '').split('\u001f').where((x) => x.isNotEmpty).toSet();
+  ///
+  /// Read from its kept form once for each form it has had: rows ask for these lists while they are built, a chat a
+  /// time, and splitting the same string for every row was most of a build of the list.
+  Set<String> localList(String what) {
+    final raw = _raw(what);
+    final had = _lists[what];
+    if (had != null && had.$1 == raw) return had.$2;
+    final set = Set<String>.unmodifiable(raw.split('\u001f').where((x) => x.isNotEmpty));
+    _lists[what] = (raw, set);
+    return set;
+  }
+
+  String _raw(String what) => listStore?.choice('inbox_${id}_$what', '') ?? '';
+  final Map<String, (String, Set<String>)> _lists = {};
 
   void setLocal(String what, String item, bool on) {
-    final s = localList(what);
+    final s = {...localList(what)};
     on ? s.add(item) : s.remove(item);
     listStore?.set('inbox_${id}_$what', s.join('\u001f'));
     KeptLists.instance.changed();
@@ -676,7 +724,22 @@ class Inbox {
   // Microsoft Teams over Microsoft Graph (Matt, 2026-11-17: "Let's add support for matrix, microsoft teams and google
   // chat"): "Not in this build" until it is built with a Microsoft app id (GHOST_TEAMS_CLIENT_ID). Google Chat the same, until
   // built with a Google app id (GHOST_GCHAT_CLIENT_ID and _SECRET).
-  static Inbox get instance => _instance ??= Inbox._([Telegram(), Bluesky(soon: true), Mastodon(soon: true), Signal(), WhatsApp(), Matrix(), Teams(), GoogleChat()]);
+  // Messenger, Instagram and LinkedIn through account helpers (Matt, 2026-11-20: "Let's do the feasible ones but skip
+  // X and google voice"; lib/inbox/account_helper.dart, sidecar/ACCOUNT_HELPERS.md): each signed in with a browser's
+  // session after a warning, "Not in this build" where its helper is not carried.
+  static Inbox get instance => _instance ??= Inbox._([
+        Telegram(),
+        Bluesky(soon: true),
+        Mastodon(soon: true),
+        Signal(),
+        WhatsApp(),
+        Matrix(),
+        Teams(),
+        GoogleChat(),
+        AccountHelper(messengerService),
+        AccountHelper(instagramService),
+        AccountHelper(linkedInService),
+      ]);
 
   /// Stand-ins for a test of a screen; null puts the app's own back.
   @visibleForTesting

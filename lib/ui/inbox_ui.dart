@@ -48,6 +48,8 @@ import 'conversations.dart' show ConversationRow;
 import 'group_drawer.dart' show showGroupDrawer;
 import 'thread.dart' show LinkedText;
 import 'me.dart' show NetworkMark;
+import '../inbox/account_helper.dart';
+import 'inbox_signin_helper.dart';
 import 'settings.dart';
 import 'shell.dart';
 import '../kit/semantic_colors.dart';
@@ -62,6 +64,7 @@ import 'inbox_signin_matrix.dart';
 import 'paste_images.dart';
 import 'schedule_ui.dart';
 import '../scheduled.dart' show ScheduleTarget;
+import '../kit/picture_decode.dart';
 
 /// The screens of the inbox of other networks (lib/inbox): a chat's row in the list, the chat itself, signing in, and
 /// the sections of Settings for each network.
@@ -364,7 +367,7 @@ class _InboxChatScreenState extends State<InboxChatScreen> with WidgetsBindingOb
   void _nearTop() {
     if (_loadingOlder || !_scroll.hasClients) return;
     if (_scroll.position.pixels < _scroll.position.maxScrollExtent - 400) return;
-    final more = switch (_n) { Bluesky b => b.hasOlder(widget.chatId), Telegram t => t.hasOlder(widget.chatId), _ => false };
+    final more = switch (_n) { Bluesky b => b.hasOlder(widget.chatId), Telegram t => t.hasOlder(widget.chatId), AccountHelper h => h.hasOlder(widget.chatId), _ => false };
     if (!more) return;
     _loadingOlder = true;
     _n.load(widget.chatId, older: true).whenComplete(() => _loadingOlder = false);
@@ -680,7 +683,7 @@ extension on _InboxChatScreenState {
   Widget _transcript(InboxChat? chat, List<InboxMessage> list) {
     final c = DialupColors.of(context.tokens);
     final group = chat?.group ?? false;
-    final more = switch (_n) { Bluesky b => b.hasOlder(widget.chatId), Telegram t => t.hasOlder(widget.chatId), _ => false };
+    final more = switch (_n) { Bluesky b => b.hasOlder(widget.chatId), Telegram t => t.hasOlder(widget.chatId), AccountHelper h => h.hasOlder(widget.chatId), _ => false };
     return Transcript(
       child: ListView.builder(
         controller: _scroll,
@@ -1324,7 +1327,7 @@ List<SettingsSection> inboxSettingsSections() => [
           id: 'inbox-${n.id}',
           label: n.name,
           icon: inboxMark(n),
-          hue: switch (n.id) { 'telegram' => 'cyan', 'mastodon' => 'purple', 'signal' => 'indigo', 'teams' => 'magenta', 'whatsapp' => 'green', 'matrix' => 'graphite', 'googlechat' => 'mint', _ => 'blue' },
+          hue: switch (n.id) { 'telegram' => 'cyan', 'mastodon' => 'purple', 'signal' => 'indigo', 'teams' => 'magenta', 'whatsapp' => 'green', 'matrix' => 'graphite', 'googlechat' => 'mint', 'instagram' => 'rose', 'messenger' => 'blue', 'linkedin' => 'indigo', _ => 'blue' },
           group: 'me',
           listed: false,
           summary: (_) => _summary(n),
@@ -1361,7 +1364,7 @@ String _summary(InboxNetwork n) => n.soon ? 'Coming soon' : switch (n.state) {
 
 List<Widget> _pane(BuildContext context, InboxNetwork n) {
   void signIn() {
-    final page = switch (n) { Telegram tg => TelegramSignInScreen(network: tg), Bluesky b => BlueskySignInScreen(network: b), Mastodon m => MastodonSignInScreen(network: m), Signal sg => SignalLinkScreen(network: sg), Teams tm => TeamsSignInScreen(network: tm), GoogleChat gc => GoogleChatSignInScreen(network: gc), WhatsApp wa => WhatsAppLinkScreen(network: wa), Matrix mx => MatrixSignInScreen(network: mx), _ => null };
+    final page = switch (n) { Telegram tg => TelegramSignInScreen(network: tg), Bluesky b => BlueskySignInScreen(network: b), Mastodon m => MastodonSignInScreen(network: m), Signal sg => SignalLinkScreen(network: sg), Teams tm => TeamsSignInScreen(network: tm), GoogleChat gc => GoogleChatSignInScreen(network: gc), WhatsApp wa => WhatsAppLinkScreen(network: wa), Matrix mx => MatrixSignInScreen(network: mx), AccountHelper h => HelperSignInScreen(network: h), _ => null };
     if (page != null) push<void>(context, (_) => page);
   }
 
@@ -1373,6 +1376,8 @@ List<Widget> _pane(BuildContext context, InboxNetwork n) {
       children: [
         // WhatsApp allows no other apps (Matt, 2026-11-17: "warn the user that it's unsupported by whatsapp").
         if (n is WhatsApp) SettingsCallout(child: Text(whatsAppWarning)),
+        // Nor do Messenger, Instagram or LinkedIn (lib/inbox/account_helper.dart): the same is said of each.
+        if (n is AccountHelper) SettingsCallout(child: Text(n.service.warning)),
         if (n.soon)
           SettingRow(icon: _icon(Lucide.info), label: 'Coming soon', hint: Text('${n.name} chats aren\'t offered yet.'), disabled: true)
         else if (n.state == InboxState.ready) ...[
@@ -1422,7 +1427,7 @@ class _FilesStrip extends StatelessWidget {
               ClipRRect(
                 borderRadius: BorderRadius.circular(t.radius('md')),
                 child: Telegram.kindOf(f) == 'photo'
-                    ? Image.file(File(f), width: side, height: side, fit: BoxFit.cover)
+                    ? Image.file(File(f), width: side, height: side, fit: BoxFit.cover, cacheWidth: faceDecodeWidth(context, side))
                     : Container(
                         width: side,
                         height: side,
@@ -1481,7 +1486,7 @@ class InboxMediaView extends StatelessWidget {
       return SizedBox(
         width: width,
         height: width / ratio,
-        child: path == null ? ColoredBox(color: t.color('app-paper-3'), child: const Center(child: GhostSpinner(size: 20))) : Image.file(File(path), fit: BoxFit.cover, gaplessPlayback: true),
+        child: path == null ? ColoredBox(color: t.color('app-paper-3'), child: const Center(child: GhostSpinner(size: 20))) : Image.file(File(path), fit: BoxFit.cover, gaplessPlayback: true, cacheWidth: fillDecodeWidth(context, width * 2)),
       );
     }
 

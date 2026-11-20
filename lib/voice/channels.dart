@@ -96,6 +96,12 @@ class Voice extends ChangeNotifier {
     final before = circled.map((c) => '${c.seed}${c.kind.wire}${c.name}').join();
     circled = spaces;
     if (spaces.map((c) => '${c.seed}${c.kind.wire}${c.name}').join() != before) _look();
+    // A space made read-only or opened again, or its circle's admins changed: its chat follows (into the room bound to
+    // the owner's key, or out of it; lib/circles/welcome.dart).
+    for (final c in spaces) {
+      final held = _hangouts[c.seed];
+      if (held != null) unawaited(held.setReadOnly(Circles.instance.readOnlyRoomFor(c)));
+    }
   }
 
   /// What this device's spaces stand on, once the relay is connected: the circles' rooms go through it too.
@@ -227,7 +233,7 @@ class Voice extends ChangeNotifier {
 
   void _saw(String room) {
     _seen[room] = DateTime.now().millisecondsSinceEpoch;
-    _app?.set('voice_seen', jsonEncode(_seen));
+    _app?.keep('voice_seen', jsonEncode(_seen));
   }
 
   Future<void> start(AppState app) async {
@@ -550,7 +556,7 @@ class Voice extends ChangeNotifier {
       // A space first listened to starts read: what was said in it before is not news.
       if (!_readAt.containsKey(c.seed)) {
         _readAt[c.seed] = lastMessage(c)?.at ?? DateTime.now().millisecondsSinceEpoch;
-        _app?.set('voice_read', jsonEncode(_readAt));
+        _app?.keep('voice_read', jsonEncode(_readAt));
       }
       unawaited(hold(c).catchError((_) => null));
     }
@@ -587,7 +593,7 @@ class Voice extends ChangeNotifier {
     final at = lastMessage(c)?.at ?? DateTime.now().millisecondsSinceEpoch;
     if ((_readAt[c.seed] ?? 0) >= at) return;
     _readAt[c.seed] = at;
-    _app?.set('voice_read', jsonEncode(_readAt));
+    _app?.keep('voice_read', jsonEncode(_readAt));
     MentionAlerts.instance?.read(c);
     notifyListeners();
   }
@@ -755,6 +761,10 @@ class Voice extends ChangeNotifier {
     room.onRoster = (_) => _enforce();
     // In a circle's space, whoever the circle put out is not heard (Circles.removeMember).
     room.shut = (id) => Circles.instance.putOutOf(c, id);
+    // In a circle's read-only space, only its owner and admins are heard, and its room is the one bound to the owner's
+    // key, where the relay holds everyone else to it too (Matt, 2026-11-20; lib/circles/welcome.dart).
+    room.mayPost = (id) => Circles.instance.mayPostIn(room.channel, id);
+    unawaited(room.setReadOnly(Circles.instance.readOnlyRoomFor(c)));
     // Someone mentioning this device: its notification (lib/voice/mention_alerts.dart).
     room.onFresh = (fresh) {
       MentionAlerts.instance?.heard(room, fresh, readAt: _readAt[c.seed] ?? 0, nameOf: nameOf);
@@ -971,7 +981,7 @@ class AppHangoutStore implements HangoutStore, HangoutVotesStore {
   }
 
   @override
-  void keepMessages(String room, List<HangoutMessage> messages) => app.set('hangout_${room}_m', jsonEncode([for (final m in messages) m.toStored()]));
+  void keepMessages(String room, List<HangoutMessage> messages) => app.keep('hangout_${room}_m', jsonEncode([for (final m in messages) m.toStored()]));
 
   @override
   Roster? roster(String room) {

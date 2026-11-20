@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import '../app_state.dart';
 import '../desktop/store.dart';
 import 'inbox.dart';
+import 'kept_writer.dart';
 import 'td_json.dart';
 
 /// Telegram, as a Telegram app: TDLib (Telegram's own client library, lib/inbox/td_json.dart) signed in to the
@@ -66,7 +67,10 @@ class Telegram extends InboxNetwork {
   @override
   String? get account => _account;
   @override
-  List<InboxChat> get chats => _chats;
+  List<InboxChat> get chats {
+    _settle();
+    return _chats;
+  }
   @override
   List<InboxMessage> messagesOf(String chatId) => _messages[chatId] ?? const [];
 
@@ -593,7 +597,10 @@ class Telegram extends InboxNetwork {
   List<InboxChat> _archived = const [];
 
   @override
-  List<InboxChat> get archivedChats => _archived;
+  List<InboxChat> get archivedChats {
+    _settle();
+    return _archived;
+  }
 
   bool _writable(int id) {
     final type = (_chatsById[id]?['type'] as Map?);
@@ -685,11 +692,22 @@ class Telegram extends InboxNetwork {
 
   /// The chats the list shows: those in the main list that can be written in (private chats and groups, not
   /// channels), the newest first, as they stand among the texts.
+  /// The lists are stale: made again when next asked for ([_settle]), and the listeners told. TDLib says thousands of
+  /// things as it starts and signs in, each of which used to make and sort every chat here; now each only says so,
+  /// and the lists are made once for whoever next reads them (docs/performance-audit.md, finding 2).
   void _rebuild() {
+    _stale = true;
+    notifyListeners();
+  }
+
+  bool _stale = false;
+
+  void _settle() {
+    if (!_stale) return;
+    _stale = false;
     final ids = _order.keys.where(_writable).toList();
     _chats = [for (final id in ids) _chat(_chatsById[id]!)]..sort((a, b) => b.date.compareTo(a.date));
     _archived = [for (final id in _archOrder.keys.where((id) => _writable(id) && !_order.containsKey(id))) _chat(_chatsById[id]!)]..sort((a, b) => b.date.compareTo(a.date));
-    notifyListeners();
   }
 
   InboxChat _chat(Map<String, Object?> c) {
@@ -813,9 +831,13 @@ class Telegram extends InboxNetwork {
       // The newest thousand edited messages: enough to see what was said, never a file that only grows.
       final all = _versions;
       if (all.length > 1000) all.remove(all.keys.first);
-      f.writeAsStringSync(jsonEncode(all));
+      // Written elsewhere, a run of edits as one write (lib/inbox/kept_writer.dart): up to a thousand edits were
+      // written whole, here, for each message edited.
+      (_versionsWriter ??= KeptWriter(file: () => _versionsFile!, snapshot: () => _versions)).save();
     } catch (_) {}
   }
+
+  KeptWriter? _versionsWriter;
 
   /// A message edited: its words before kept, and it drawn again as it now is (its reactions as they stand here).
   void _edited(String chat, String id, Map<String, Object?> Function(Map<String, Object?> raw) change) {
@@ -1487,6 +1509,7 @@ class Telegram extends InboxNetwork {
   @override
   void dispose() {
     _disposed = true;
+    _versionsWriter?.flush();
     _sub?.cancel();
     _td?.close();
     super.dispose();
