@@ -74,6 +74,13 @@ set_target_properties(${BINARY_NAME}
 # them to the application.
 include(flutter/generated_plugins.cmake)
 
+# flutter_webrtc 1.6.3 sets a Windows-only messenger in its shared source.
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag("-Wunused-but-set-global" HAS_UNUSED_BUT_SET_GLOBAL)
+if(HAS_UNUSED_BUT_SET_GLOBAL)
+  target_compile_options(flutter_webrtc_plugin PRIVATE -Wno-error=unused-but-set-global)
+endif()
+
 
 # === Installation ===
 # By default, "installing" just makes a relocatable bundle in the build
@@ -93,6 +100,20 @@ set(INSTALL_BUNDLE_LIB_DIR "${CMAKE_INSTALL_PREFIX}/lib")
 
 install(TARGETS ${BINARY_NAME} RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}"
   COMPONENT Runtime)
+
+# The Signal inbox starts this helper beside the Linux executable.
+set(APP_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/..")
+set(SIGNAL_HELPER "${APP_ROOT}/build/signal-sidecar/linux/signal-sidecar")
+add_custom_command(OUTPUT "${SIGNAL_HELPER}"
+  COMMAND sh "${APP_ROOT}/tool/build-signalsidecar.sh" linux
+  DEPENDS "${APP_ROOT}/tool/build-signalsidecar.sh" "${APP_ROOT}/sidecar/signal/main.go"
+          "${APP_ROOT}/sidecar/signal/go.mod" "${APP_ROOT}/sidecar/signal/go.sum"
+  VERBATIM)
+add_custom_target(signal_sidecar DEPENDS "${SIGNAL_HELPER}")
+add_dependencies(${BINARY_NAME} signal_sidecar)
+install(PROGRAMS "${SIGNAL_HELPER}" DESTINATION "${CMAKE_INSTALL_PREFIX}" COMPONENT Runtime)
+install(FILES "${APP_ROOT}/sidecar/signal/LICENSE" "${APP_ROOT}/sidecar/signal/SOURCE_URL"
+  DESTINATION "${INSTALL_BUNDLE_DATA_DIR}/signal-sidecar" COMPONENT Runtime)
 
 install(FILES "${FLUTTER_ICU_DATA_FILE}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
   COMPONENT Runtime)
