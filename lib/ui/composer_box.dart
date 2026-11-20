@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart' show TextCapitalization, TextInputAction, TextInputType;
 import 'package:flutter/widgets.dart';
@@ -68,6 +69,9 @@ class _ComposerBoxState extends State<ComposerBox> {
   Widget build(BuildContext context) {
     final t = context.tokens;
     if (isBevelChrome(t)) return _dialup(context, t);
+    // On Linux a quick type/backspace cycle should put the caret and buttons
+    // back in place as soon as the text changes.
+    final move = defaultTargetPlatform == TargetPlatform.linux ? Duration.zero : ComposerBox.move;
     final typing = widget.typing;
     final plus = widget.plus;
     final row = t.lenOf('2.25rem');
@@ -84,7 +88,7 @@ class _ComposerBoxState extends State<ComposerBox> {
         child: Stack(children: [
           Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             AnimatedPadding(
-              duration: ComposerBox.move,
+              duration: move,
               curve: ComposerBox.curve,
               padding: EdgeInsets.only(
                 left: typing || plus == null ? words : _plusWidth + gap,
@@ -93,14 +97,16 @@ class _ComposerBoxState extends State<ComposerBox> {
               child: widget.field,
             ),
             // The row the buttons come down into.
-            AnimatedContainer(duration: ComposerBox.move, curve: ComposerBox.curve, height: typing ? row + gap : 0),
+            AnimatedContainer(duration: move, curve: ComposerBox.curve, height: typing ? row + gap : 0),
           ]),
           if (plus != null) Positioned(left: 0, bottom: 0, child: _Measure(onSize: (s) => _measured(true, s), child: plus)),
           Positioned(
             right: 0,
             bottom: 0,
             child: AnimatedSwitcher(
-              duration: ComposerBox.move,
+              duration: move,
+              // The same row can return while an older copy is still fading.
+              transitionBuilder: (child, animation) => FadeTransition(key: ObjectKey(animation), opacity: animation, child: child),
               // The buttons going fade out in the first half and the ones coming in fade in over the second, so the
               // two sets are never drawn over each other.
               switchInCurve: const Interval(0.5, 1, curve: Curves.easeOut),
