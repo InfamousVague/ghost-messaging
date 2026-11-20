@@ -46,6 +46,8 @@ import 'inbox_ui.dart';
 import '../inbox/inbox.dart';
 import '../friends/groups.dart';
 import 'thread.dart';
+import 'feedback_screen.dart' show FeedbackButton;
+import 'window_chrome.dart' show MacChrome;
 import '../kit/semantic_colors.dart';
 
 /// Home: every conversation, the newest first, with a search over names, numbers and the last message.
@@ -1230,7 +1232,13 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
       );
     }
 
+    // The header's buttons: a plugin's (the cleaner), and Mark all read while anything is unread. With neither, and
+    // nothing else there, the page has no bar (Matt, 2026-11-19: "if there is no mark as read or cleaner icons rendered
+    // at the top remove the extra space above the searchbar too").
+    final headerButtons = widget.archived || _selecting ? const <Widget>[] : _plugins.header(context, ListPlace(section: _section, shown: shown.length, groups: _plugins.groups(_all ?? const [])));
+    final unreadHere = _unreadTexts(_section).length + _unreadChats(_section).length + _unreadSpaces(_section).length;
     final page = GhostPage(
+      noBar: !dialup && !widget.archived && !_selecting && framed && headerButtons.isEmpty && unreadHere == 0,
       title: widget.archived ? 'Archived' : (dialup ? 'Chat List' : 'Messages'),
       back: widget.archived && !_selecting,
       // A newer version waiting: above the title and the search (Matt, 2026-11-14: "move the update banner on desktop
@@ -1257,7 +1265,7 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
           if (Sms.can('deleteThreads')) IconTap(icon: Lucide.trash2, label: 'Delete', color: t.danger, onPressed: _confirmDeleteSelected),
         ] else if (!widget.archived) ...[
           // Plugins: their buttons for the list's header, in the frame and out of it.
-          ..._plugins.header(context, ListPlace(section: _section, shown: shown.length, groups: _plugins.groups(_all ?? const []))),
+          ...headerButtons,
           // Mark all read for the tab shown, at the title row's end (Matt, 2026-11-14: "make the mark all read aligned
           // to the right of the messages title row instead of next to the filter").
           // Dial-Up: the same, as one of the bar's tool buttons rather than a round one.
@@ -1266,10 +1274,11 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
               final n = _unreadTexts(_section).length + _unreadChats(_section).length;
               return IconTap(icon: Lucide.checkCheck, label: n > 0 ? 'Mark all read, $n unread' : 'Mark all read, nothing unread', onPressed: n > 0 ? () => _markAllRead(_section) : null);
             })
-          else
+          // Only while there is something to mark (Matt, 2026-11-19): greyed out it held the bar open for nothing.
+          else if (unreadHere > 0)
             Padding(
               padding: EdgeInsets.only(left: t.space(1)),
-              child: MarkAllRead(unread: _unreadTexts(_section).length + _unreadChats(_section).length + _unreadSpaces(_section).length, onPress: () => _markAllRead(_section)),
+              child: MarkAllRead(unread: unreadHere, onPress: () => _markAllRead(_section)),
             ),
           // Shown alone, with no frame and so no pill: the two it would hold.
           // The same plain plus as the pill's, that says New (Matt, 2026-11-17).
@@ -1292,7 +1301,17 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
                     size: GlacierFieldSize.md,
                     onValueChange: (v) => setState(() => _query = v),
                   );
-                  return dialup ? DialupWell(child: field) : field;
+                  final search = dialup ? DialupWell(child: field) : field;
+                  // On the Mac it is in the window's title strip instead (lib/desktop/ui/desk_title_bar.dart).
+                  if (widget.archived || MacChrome.stripEnabled) return search;
+                  // Share feedback beside the search, at the top of the list on a phone and beside a pane, there
+                  // whether or not the page has a bar over it (Matt, 2026-11-19: "add a "share feedback" button
+                  // hovering in the topbar of the app"; the bar goes when it has nothing in it: "remove the extra space
+                  // above the searchbar too").
+                  return Row(children: [
+                    Expanded(child: search),
+                    Padding(padding: EdgeInsets.only(left: t.space(2)), child: const FeedbackButton()),
+                  ]);
                 }),
               ),
               // What the frame keeps under the search: on a computer, how the phone is connected.
