@@ -85,6 +85,8 @@ final List<(List<String>, LucideIcon)> _noteIcons = [
   (['record'], Lucide.circleDot),
   (['scribe', 'written out', 'transcri'], Lucide.scrollText),
   (['caption'], Lucide.text),
+  (['soundboard'], Lucide.megaphone),
+  (['voice changer'], Lucide.audioLines),
   (['watch together', 'video', 'film'], Lucide.film),
   (['sms', 'by text', 'texting'], Lucide.smartphone),
   (['mention', '@'], Lucide.atSign),
