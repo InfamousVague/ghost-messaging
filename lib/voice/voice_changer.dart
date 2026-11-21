@@ -3,7 +3,7 @@
 /// transcribe and re speak what they say"; "build it as a plugin"). The plugin is lib/plugins/voice_changer.dart; its
 /// pages are lib/ui/voice_changer_ui.dart.
 ///
-/// ElevenLabs' Voice Changer (POST /v1/voice-changer/{voice}) is speech to speech: it keeps how the recording was said
+/// ElevenLabs' Voice Changer (POST /v1/voice-changer/{voice}, as its reference gives it on 2026-11-21) is speech to speech: it keeps how the recording was said
 /// (its timing, rise and fall, feeling, a laugh or a whisper) and gives it back in the voice chosen. It wants the whole
 /// recording before it starts, so this is for voice messages, which are whole before they are sent; a live call would
 /// run a sentence behind.
@@ -68,6 +68,35 @@ class ChangerVoice {
 }
 
 /// Why a voice could not be changed or the list not read, in words for the person.
+/// A voice made on this device as it is said, for calls (native/voicefx voicefx_effect; Matt, 2026-11-21: "Add support
+/// (by default) for the voice changer to use on the fly voice changing the elevenlabs is very slow and not real time"):
+/// about a fiftieth of a second behind, free, and nothing leaves the device.
+///
+/// Each moves the voice's pitch and its formants (how big the throat and mouth sound) apart, as a real voice of that
+/// kind differs (Matt, 2026-11-21: "work on making them sound more realistic and do feminine masculine and things like
+/// that"); the names are native/voicefx's (voicefx_effect_id).
+enum VoiceEffect {
+  feminine('Feminine', 'A woman\'s pitch and voice'),
+  masculine('Masculine', 'A man\'s pitch and voice'),
+  deeper('Deeper', 'Your voice, a little lower and fuller'),
+  higher('Higher', 'Your voice, a little higher and lighter'),
+  child('Child', 'High, with a small voice'),
+  older('Older', 'A little lower, with a waver'),
+  monster('Monster', 'Huge, very low and rough'),
+  chipmunk('Chipmunk', 'The cartoon: squeaky and fast-sounding'),
+  robot('Robot', 'One flat, mechanical pitch'),
+  radio('Radio', 'Thin, like a walkie-talkie');
+
+  const VoiceEffect(this.label, this.about);
+  final String label;
+  final String about;
+
+  static VoiceEffect? named(String? n) => values.where((e) => e.name == n).firstOrNull;
+}
+
+/// How a call's voice is changed: here, as it is said ([VoiceEffect]), or by ElevenLabs, a phrase behind.
+enum CallVoiceWay { device, elevenlabs }
+
 class VoiceChangerProblem implements Exception {
   const VoiceChangerProblem(this.words);
   final String words;
@@ -110,6 +139,8 @@ class VoiceChanger extends ChangeNotifier {
   bool _clean = true;
   bool _paused = false;
   bool _live = false;
+  CallVoiceWay _way = CallVoiceWay.device;
+  VoiceEffect _effect = VoiceEffect.deeper;
   bool _loaded = false;
 
   /// Asking ElevenLabs now (its list, or a recording).
@@ -130,6 +161,9 @@ class VoiceChanger extends ChangeNotifier {
       _clean = j['clean'] != false;
       _paused = j['paused'] == true;
       _live = j['live'] == true;
+      // On this device unless ElevenLabs was chosen: the default since 2026-11-21.
+      _way = j['way'] == 'elevenlabs' ? CallVoiceWay.elevenlabs : CallVoiceWay.device;
+      _effect = VoiceEffect.named(j['effect'] as String?) ?? VoiceEffect.deeper;
     } catch (_) {
       // Nothing kept yet.
     }
@@ -144,7 +178,7 @@ class VoiceChanger extends ChangeNotifier {
         Process.runSync('chmod', ['700', dir.path]);
         Process.runSync('chmod', ['600', f.path]);
       }
-      f.writeAsStringSync(jsonEncode({'key': _key, 'voice': _voice?.toJson(), 'voices': [for (final v in _voices) v.toJson()], 'clean': _clean, 'paused': _paused, 'live': _live}), flush: true);
+      f.writeAsStringSync(jsonEncode({'key': _key, 'voice': _voice?.toJson(), 'voices': [for (final v in _voices) v.toJson()], 'clean': _clean, 'paused': _paused, 'live': _live, 'way': _way.name, 'effect': _effect.name}), flush: true);
     } catch (_) {
       // Kept for this run alone.
     }
@@ -194,8 +228,38 @@ class VoiceChanger extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// How a call's voice is changed: on this device unless ElevenLabs was chosen.
+  CallVoiceWay get way {
+    _load();
+    return _way;
+  }
+
+  void setWay(CallVoiceWay w) {
+    _load();
+    _way = w;
+    _save();
+    notifyListeners();
+  }
+
+  /// The effect a call's voice has, made on this device.
+  VoiceEffect get effect {
+    _load();
+    return _effect;
+  }
+
+  void setEffect(VoiceEffect e) {
+    _load();
+    _effect = e;
+    _save();
+    notifyListeners();
+  }
+
+  /// Everything a call's voice needs to be changed: nothing more for an effect made here; a key and a voice for
+  /// ElevenLabs.
+  bool get callReady => way == CallVoiceWay.device || ready;
+
   /// A call's voice is changed live now.
-  bool get liveActive => active && live;
+  bool get liveActive => isOn() && callReady && live && !(way == CallVoiceWay.elevenlabs && paused);
 
   /// Everything it needs is there.
   bool get ready => hasKey && voice != null;
