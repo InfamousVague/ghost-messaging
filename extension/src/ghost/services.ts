@@ -5,7 +5,8 @@
 //
 // `needed` are the cookies a service cannot sign in without: the extension treats a site as "signed in and ready to
 // sync" once all of them are present. The app re-filters what it keeps per service (cookiesOf), so capturing the
-// whole site's cookies is fine — LinkedIn in fact wants them all.
+// whole site's cookies is fine. LinkedIn was here and is gone, as from the app (Matt, 2026-11-21: "linked in keeps
+// automatically signing our sessions out remove the plugin"): LinkedIn ended the session whenever it was used elsewhere.
 
 export interface Service {
   /** The network id in the app ("messenger"), which the synced entry is filed under. */
@@ -34,13 +35,26 @@ export const SERVICES: Service[] = [
     needed: ['sessionid', 'csrftoken', 'ds_user_id'],
     signInUrl: 'https://www.instagram.com/direct/inbox/',
   },
-  {
-    id: 'linkedin',
-    name: 'LinkedIn',
-    domains: ['.linkedin.com'],
-    needed: ['li_at', 'JSESSIONID'],
-    signInUrl: 'https://www.linkedin.com/messaging/',
-  },
 ];
 
-export const serviceById = (id: string): Service | undefined => SERVICES.find((s) => s.id === id);
+/**
+ * Google Messages (RCS), set up by Google account (GMFB-10, @kevin: "Getting rcs is annoying due to the workaround we
+ * are using so maybe making a chrome extension to automate is a better solution"). The app's own Google sign-in asks
+ * for a private window, signing in to Google, "Copy as cURL" and a paste (messaging/lib/gm/google_signin.dart); this
+ * does the window and the copy. Kept out of [SERVICES] on purpose: it is never read from the browser's own profile
+ * (Google keeps changing that sign-in, and a pairing made from it stops working), only from the private window the
+ * popup opens for it, which is closed once captured so the sign-in stays as it was. The names are the app's
+ * googleCookieNames; the address is its googleSignInUrl.
+ */
+export const GOOGLE: Service = {
+  id: 'gmessages',
+  name: 'Google Messages (RCS)',
+  domains: ['.google.com'],
+  needed: ['SID', 'HSID', 'SSID', 'OSID', 'APISID', 'SAPISID'],
+  signInUrl: 'https://accounts.google.com/AccountChooser?continue=https://messages.google.com/web/config',
+};
+
+/** The cookies of [GOOGLE] the app takes; the rest of google.com's are left out of what is synced. */
+export const GOOGLE_KEEP = ['SID', 'HSID', 'SSID', 'OSID', 'APISID', 'SAPISID', '__Secure-1PSIDTS'];
+
+export const serviceById = (id: string): Service | undefined => (id === GOOGLE.id ? GOOGLE : SERVICES.find((s) => s.id === id));
