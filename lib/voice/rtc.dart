@@ -122,6 +122,20 @@ class RtcMedia implements VoiceMedia, FallbackMedia {
   /// Reads how loud each sound is, several times a second (WebRTC's audioLevel: the incoming sound's at each
   /// connection, the microphone's at its media source), eased so a face does not flicker between words.
   Future<void> _readLevels() async {
+    // One reading at a time: when the app is busy (an upload sealing beside the call), readings that overlapped piled
+    // up getStats on the platform channel and made it busier still (GMFB-6).
+    if (_reading) return;
+    _reading = true;
+    try {
+      await _readLevelsOnce();
+    } finally {
+      _reading = false;
+    }
+  }
+
+  bool _reading = false;
+
+  Future<void> _readLevelsOnce() async {
     final next = <String, double>{};
     final meter = _meter;
     if (meter != null) {
@@ -168,7 +182,11 @@ class RtcMedia implements VoiceMedia, FallbackMedia {
       } catch (_) {}
     }
     final was = levels.value;
-    levels.value = {for (final k in {...was.keys, ...next.keys}) k: _ease(was[k] ?? 0, next[k] ?? 0)};
+    final eased = {for (final k in {...was.keys, ...next.keys}) k: _ease(was[k] ?? 0, next[k] ?? 0)};
+    // Told only when a face would move: a new map each reading had every listener rebuild seven times a second while
+    // nobody spoke (GMFB-6).
+    final moved = eased.length != was.length || eased.entries.any((e) => ((was[e.key] ?? -1) - e.value).abs() > 0.01);
+    if (moved) levels.value = eased;
   }
 
   bool _opening = false;
@@ -423,6 +441,9 @@ class RtcMedia implements VoiceMedia, FallbackMedia {
       for (final p in _peers.values) {
         await p.showCamera(null);
       }
+      // Let the screen drop its renderer of this camera before the camera goes (GMFB-5: a renderer still holding a
+      // disposed stream kept its last frame, on the Mac, in whichever tile it had moved to).
+      await Future<void>.delayed(const Duration(milliseconds: 120));
       for (final t in cam.getTracks()) {
         await t.stop();
       }
