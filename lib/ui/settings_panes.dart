@@ -10,6 +10,8 @@ import 'setup.dart' show TextsStep;
 import 'api_pane.dart';
 import '../inbox/inbox.dart';
 import 'blocking.dart';
+import 'report_sheet.dart' show ReportsMadeList, reportsMadeKey;
+import '../safety/abuse_report.dart' show MadeReport;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:glacier/glacier.dart';
@@ -236,6 +238,19 @@ List<SettingsSection> _ownSections() => [
     },
     page: _blocked,
   ),
+  // Reports you've made (GMFB-40): kept on this device alone (lib/ui/report_sheet.dart).
+  SettingsSection(
+    id: 'reports',
+    label: 'Reports you\'ve made',
+    icon: _icon(Lucide.flag),
+    hue: 'amber',
+    group: 'privacy',
+    summary: (m) {
+      final n = MadeReport.readAll(m.app.choice(reportsMadeKey, '[]')).length;
+      return n == 0 ? 'None' : '$n';
+    },
+    page: (context, m) => const [ReportsMadeList()],
+  ),
   SettingsSection(
     id: 'archived',
     label: 'Archived',
@@ -376,7 +391,7 @@ List<SettingsSection> _ownSections() => [
     ];
 
 /// The version this build is, where Android has not said (the screens drawn in tests).
-const appVersion = '0.12.11';
+const appVersion = '0.12.12';
 
 // --- Appearance -------------------------------------------------------------------------------------------------------
 
