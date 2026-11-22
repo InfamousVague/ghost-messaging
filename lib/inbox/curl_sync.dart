@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import '../account/account.dart';
 import '../app_state.dart';
 import '../me/me.dart';
 import 'account_helper.dart';
@@ -19,12 +20,25 @@ import 'inbox.dart';
 /// on and signs it in with the cookies — the same path a pasted sign-in takes (AccountHelper.signIn).
 ///
 /// The relay holds only the sealed blob; it cannot read the cookies. One blob per account (keyed by the shared Ghost
-/// identity), last writer wins, so the extension reads-modifies-writes it. This class only reads.
+/// identity), last writer wins, so the extension reads-modifies-writes it, and so does [share] (a sign-in made in the
+/// app, for the account's other devices).
 class CurlSync {
-  CurlSync._();
+  CurlSync._() {
+    AccountHelper.onShare = (id, cookies) => unawaited(share(id, cookies));
+  }
   static final CurlSync instance = CurlSync._();
 
-  AppState? app;
+  AppState? _app;
+  AppState? get app => _app;
+  set app(AppState? a) {
+    _app = a;
+    // Read again every few minutes while the app runs, not only as the relay says hello or the app comes to the front:
+    // a computer's window stays open for days (Matt, 2026-11-21: "Plugins should sync across devices also").
+    _every?.cancel();
+    if (a != null) _every = Timer.periodic(const Duration(minutes: 2), (_) => unawaited(pull()));
+  }
+
+  Timer? _every;
   bool _busy = false;
 
   /// What the account keeps: `{v:1, entries:{<serviceId>:{cookies:{name:value}, at:ms, from:'<label>'}}}`.
@@ -51,6 +65,25 @@ class CurlSync {
       // A blob that can't be opened (no account key yet, or a newer format) just means nothing to apply.
     } finally {
       _busy = false;
+    }
+  }
+
+  /// Keeps [cookies], a sign-in to [serviceId] just made on this device, for the account's other devices: read, joined
+  /// and written back whole (the plugin list and the other entries kept as they are). Marked applied here, so this
+  /// device doesn't sign in with it again.
+  Future<void> share(String serviceId, Map<String, String> cookies) async {
+    final app = this.app;
+    if (app == null || cookies.isEmpty) return;
+    try {
+      final kept = await Me.instance.curlKept(strict: true) ?? {'v': _version};
+      if (kept['v'] != _version) return;
+      final entries = Map<String, Object?>.from((kept['entries'] as Map?)?.cast<String, Object?>() ?? const {});
+      final at = DateTime.now().millisecondsSinceEpoch;
+      entries[serviceId] = {'cookies': cookies, 'at': at, 'from': Account.instance.profiles.deviceName};
+      await Me.instance.curlKeep({...kept, 'entries': entries});
+      app.set('curl_applied_$serviceId', '$at');
+    } catch (_) {
+      // The relay away, or the blob unreadable: not written over; the next sign-in shares it.
     }
   }
 
@@ -90,9 +123,14 @@ class CurlSync {
 
     // Not started yet (a plugin switched off, or never started): switch it on so its helper runs, then sign in.
     if (n.state == InboxState.unavailable) await Inbox.instance.enable(n);
-    if (n.state != InboxState.signedOut) return; // helper not in this build, or still coming up
+    // A helper just started takes a moment to say it is up: wait for it, rather than give up on this entry until the
+    // next pull (the reason a synced Discord never signed in on a phone, 2026-11-21).
+    for (var i = 0; i < 40 && n.state == InboxState.unavailable; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 250));
+    }
+    if (n.state != InboxState.signedOut) return; // helper not in this build
 
-    final ok = await n.signIn(jsonEncode(cookies));
+    final ok = await n.signIn(jsonEncode(cookies), share: false);
     if (ok) app.set(appliedKey, '$at');
   }
 }
