@@ -406,9 +406,10 @@ class Me extends ChangeNotifier {
       case 'admin-log':
         _waiting.remove('${m['dir']}:')?.complete(m);
       case 'whois':
-        // To the lookup of the name it names, and nobody else's ([whois]).
+        // To the lookup of the name it names, and nobody else's ([whois]); never one asked of another relay (`at`:
+        // lib/net/homes.dart's; found in the review of relays that talk, 2026-11-23).
         final name = m['name'];
-        if (name is String) _waiting.remove(_lookingFor(name))?.complete(m);
+        if (name is String && m['at'] == null) _waiting.remove(_lookingFor(name))?.complete(m);
       case 'link':
       case 'proof':
       case 'text':
@@ -448,6 +449,8 @@ class Me extends ChangeNotifier {
         if (changed) _write();
       case 'err':
         final about = m['about'] as String?;
+        // An error about a name asked of another relay is lib/net/homes.dart's.
+        if (about == 'whois' && m['at'] != null) break;
         final error = MeError((m['err'] as String?) ?? 'That did not work.');
         // A check that fails, or a code that is not the one sent, answers whoever waits for "linked". A lookup's refusal
         // names no name: it is the one lookup in flight's, lookups going one at a time ([whois]).
@@ -621,11 +624,16 @@ class Me extends ChangeNotifier {
 
   /// The key this account's devices seal the copies of their conversations to each other with (GMFB-21; Friends
   /// copyKind): from the account's words, as the blob's is, so every device signed in to the account has it and
-  /// nobody else does. Null where no account is signed in to here.
+  /// nobody else does. Null where no account is signed in to here. A page in a browser keeps no words, only this key,
+  /// made from them as it signed in ([mineSecret], lib/account/account.dart).
   Future<Uint8List?> mineKey() async {
     try {
       final typed = await Sms.instance.secretRead('account_words');
-      if (typed == null || typed.trim().isEmpty) return null;
+      if (typed == null || typed.trim().isEmpty) {
+        if (!Sms.browser) return null;
+        final kept = await Sms.instance.secretRead(mineSecret);
+        return kept != null && kept.length == 64 ? NetCrypto.unhex(kept) : null;
+      }
       final words = AccountCrypto.tidyWords(typed);
       if (!AccountCrypto.validWords(words)) return null;
       return mineKeyOf(words);
@@ -636,6 +644,12 @@ class Me extends ChangeNotifier {
 
   /// [mineKey] for the account words [words], for a test.
   static Uint8List mineKeyOf(List<String> words) => AccountCrypto.hkdf(AccountCrypto.seedOf(words), 'ghost-account v1', 'ghost mine v1');
+
+  /// Where a page in a browser keeps [mineKey] in the words' place. It can't be turned back into the words, and opens
+  /// none of the account's other keys; but it opens the copies the account's devices pass each other of what is said
+  /// with friends by username, both ways, for as long as the account lasts, since it never changes. Whoever takes it
+  /// from a browser can read those copies as they pass through the relay.
+  static const mineSecret = 'account_mine';
 
   /// Forgets the cached cURL key (on sign-out, when the account's words change).
   void forgetCurlKey() => _curlKeyCache = null;
