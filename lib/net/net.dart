@@ -7,8 +7,11 @@ import '../me/me.dart' show Me;
 import '../sms.dart';
 import 'carrier.dart';
 import 'crypto.dart';
+import 'forward_secrecy.dart';
 import 'hub_carrier.dart';
+import 'hub_link.dart';
 import 'packet.dart';
+import 'relay_choice.dart';
 import 'sms_carrier.dart';
 import 'switchboard.dart';
 
@@ -186,7 +189,14 @@ class Net extends ChangeNotifier implements PeerBook {
         final sms = _sms = SmsCarrier(_PhoneSms());
         routes = [hub, sms];
       }
-      final board = _board = Switchboard(me: me.id, peers: this, carriers: routes);
+      // This device's forward secrecy (GMFB-26): its prekeys in the secret store beside the account's words, never in
+      // the account's backup. Where that store can't be read, none: everything is sealed the old way, as before.
+      // Where it can't be read yet (an iPhone's Keychain before its first unlock), tried again every half minute and as
+      // the app comes back; until then everything is sealed the old way, with no prekey, which tells friends to do the
+      // same (ForwardSecrecy.sawOld), and forward-secret packets are passed on to a sibling device, not answered.
+      final fs = ForwardSecrecy(device: device, secrets: _SecretFsStore(), plain: _ChoiceFsStore(app));
+      if (!await fs.tryLoad()) _fsAgain(fs);
+      final board = _board = Switchboard(me: me.id, peers: this, carriers: routes, fs: fs);
       board.off.addAll(app.choice('net_off', '').split(',').where((s) => s.isNotEmpty));
       board.changed.addListener(notifyListeners);
       _subs.add(board.received.listen(_received));
@@ -206,7 +216,21 @@ class Net extends ChangeNotifier implements PeerBook {
 
   /// The app has come back after [away] (main.dart): the relay server's connection is made again where it may have
   /// died meanwhile, and what friends were sent and have not answered goes again once it is up (Friends).
-  void resume(Duration away) => _hub?.nudge(away: away);
+  void resume(Duration away) {
+    _hub?.nudge(away: away);
+    final fs = _board?.fs;
+    if (fs != null && !fs.loaded) unawaited(fs.tryLoad());
+  }
+
+  Timer? _fsTimer;
+
+  /// Tries [fs]'s load again every half minute until it works.
+  void _fsAgain(ForwardSecrecy fs) {
+    _fsTimer?.cancel();
+    _fsTimer = Timer.periodic(const Duration(seconds: 30), (t) async {
+      if (fs.loaded || await fs.tryLoad()) t.cancel();
+    });
+  }
 
   Future<void> _readPeers() async {
     final list = await Sms.instance.netPeers();
@@ -230,6 +254,8 @@ class Net extends ChangeNotifier implements PeerBook {
       await s.cancel();
     }
     _subs.clear();
+    _fsTimer?.cancel();
+    _fsTimer = null;
     final board = _board;
     _board = null;
     _hub = null;
@@ -309,8 +335,30 @@ class Net extends ChangeNotifier implements PeerBook {
     notifyListeners();
   }
 
+  /// Whether the relay in use is Ghost Messaging's own default one.
+  bool get onDefaultHub => hubUrl == defaultHub;
+
+  /// Moves to the relay at [typed] (GMFB-25; relay_choice.dart), but only once a Ghost Messaging relay answers there:
+  /// the address is tidied ([tidyRelayAddress]), asked ([checkRelay]), and [confirm], where given, asked with the
+  /// tidied address before anything changes. Empty, or our own address, is ours again and needs no check. Says why
+  /// it didn't move, or null where it did (or the person said no at [confirm]: then declined is true).
+  Future<({String? problem, bool declined})> useRelay(String typed, {HubDial? connect, Duration timeout = const Duration(seconds: 8), Future<bool> Function(String url)? confirm}) async {
+    final url = tidyRelayAddress(typed);
+    if (url == null) return (problem: 'That isn\'t a relay server\'s address. It looks like relay.example.com or wss://relay.example.com/hub.', declined: false);
+    if (url.isEmpty || url == defaultHub) {
+      if (!onDefaultHub) await setHub('');
+      return (problem: null, declined: false);
+    }
+    if (url == hubUrl) return (problem: null, declined: false);
+    final check = await checkRelay(url, connect: connect, timeout: timeout);
+    if (!check.ok) return (problem: check.problem, declined: false);
+    if (confirm != null && !await confirm(url)) return (problem: null, declined: true);
+    await setHub(url);
+    return (problem: null, declined: false);
+  }
+
   /// Uses another relay server ([url] empty: ours again). The route is taken out and one for the new address put
-  /// in its place: the rest of the app does not know.
+  /// in its place: the rest of the app does not know. Settings › Routes goes through [useRelay], which checks first.
   Future<void> setHub(String url) async {
     _app?.set('net_hub', url.trim());
     final board = _board, old = _hub, me = id;
@@ -359,6 +407,24 @@ class Net extends ChangeNotifier implements PeerBook {
     );
     return (delivery: d, took: took);
   }
+}
+
+/// Where this device's prekeys are kept: the Keychain, Android's vault, as the account's words are (Sms.secretKeep).
+class _SecretFsStore implements FsStore {
+  @override
+  Future<String?> read(String name) => Sms.instance.secretRead(name);
+  @override
+  Future<void> write(String name, String value) => Sms.instance.secretKeep(name, value);
+}
+
+/// Where what others offered, and the packets seen, are kept: with the app's choices, drawing nothing again.
+class _ChoiceFsStore implements FsStore {
+  _ChoiceFsStore(this.app);
+  final AppState app;
+  @override
+  Future<String?> read(String name) async => app.choice(name, '');
+  @override
+  Future<void> write(String name, String value) async => app.keep(name, value);
 }
 
 class _PhoneSigner implements NetSigner {
