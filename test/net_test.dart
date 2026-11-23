@@ -74,12 +74,30 @@ class LinkCarrier extends FakeCarrier implements LiveLinks {
   LinkCarrier(super.id);
   bool open = false;
   final byLink = <Uint8List>[];
+
+  /// What went back on the link something came by: answers.
+  final byLine = <Uint8List>[];
   @override
   bool linked(Peer peer) => open;
+  @override
+  bool get linkedToSomeone => open;
   @override
   Future<Handed> sendLinked(Peer peer, Uint8List packet) async {
     if (this.fail || !open) throw CarrierError('it broke');
     byLink.add(packet);
+    twin?.take(packet);
+    return Handed.passed;
+  }
+
+  /// What comes by this route comes on a link, which an answer goes back on.
+  @override
+  void take(Uint8List packet) => _arrived.add(Arrived(id, packet, address: 'the-other-number', line: 'the link'));
+
+  @override
+  Future<Handed> sendOn(Peer peer, Object? line, Uint8List packet) async {
+    if (this.fail) throw CarrierError('it broke');
+    if (line != 'the link') return sendLinked(peer, packet);
+    byLine.add(packet);
     twin?.take(packet);
     return Handed.passed;
   }
@@ -96,8 +114,17 @@ class Book implements PeerBook {
   final Map<String, Peer> all = {};
   @override
   Peer? byId(String id) => all[id];
+}
+
+/// A phone's data texts stood in for: always able to send, and where each went.
+class _Texts implements SmsBridge {
+  final to = <String>[];
   @override
-  Peer? byAddress(String address) => all.values.where((p) => p.address == address).firstOrNull;
+  Future<bool> available() async => true;
+  @override
+  Future<void> send(String address, Uint8List bytes) async => to.add(address);
+  @override
+  Stream<({String address, Uint8List bytes})> get incoming => const Stream.empty();
 }
 
 /// Two installs that have exchanged keys, each with a switchboard over the routes given.
@@ -203,6 +230,27 @@ void main() {
       for (final p in pieces.skip(1)) {
         expect(joiner.add(Packet.parse(p)!), isNull, reason: 'its first piece was dropped ten minutes on');
       }
+    });
+
+    // Found in review, 2026-11-23: the SMS route took any address that wasn't empty, a friend by username's "@maya"
+    // among them, and Android failed the data text without a word, so it read as passed on.
+    test('a data text goes only to a phone number: never a username, a stand-in, or a sender\'s name', () async {
+      for (final a in ['+1 (555) 000-2222', '5550002222', '+15550002222', '555.000.2222']) {
+        expect(SmsCarrier.isNumber(a), isTrue, reason: a);
+      }
+      for (final a in ['@maya', '@ben.5550002222', '', 'AMAZON', 'gghhiijjkkllmmnnooppaabbccddeeff@member.ghost-sms.com', '12345', 'x5550002222']) {
+        expect(SmsCarrier.isNumber(a), isFalse, reason: a);
+      }
+      final bridge = _Texts();
+      final sms = SmsCarrier(bridge);
+      await sms.start();
+      expect(sms.reaches(const Peer(id: 'x', address: '@maya')), isFalse);
+      expect(sms.reaches(const Peer(id: 'x', address: '')), isFalse);
+      expect(sms.reaches(const Peer(id: 'x', address: '+15550002222')), isTrue);
+      await expectLater(sms.send(const Peer(id: 'x', address: '@maya'), Uint8List(10)), throwsA(isA<CarrierError>()));
+      await sms.send(const Peer(id: 'x', address: '+15550002222'), Uint8List(10));
+      expect(bridge.to, ['+15550002222']);
+      await sms.stop();
     });
   });
 

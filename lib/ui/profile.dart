@@ -8,12 +8,14 @@ import '../friends/buddies.dart';
 import '../kit/settings_kit.dart';
 import '../inbox/inbox.dart' show InboxPresence;
 import '../me/me.dart';
+import '../sms.dart' show Sms;
 import 'circles/circle_picture.dart' show pickProfilePicture;
 import 'add_me.dart';
 import 'common.dart';
 import 'cosmetics_picker.dart';
 import 'profile_card.dart' show ProfileFace;
 import 'sign_up_from.dart';
+import 'username_friends.dart' show acceptRequest, requestLine;
 import '../kit/semantic_colors.dart';
 
 /// Your profile on Ghost Messaging (Matt, 2026-11-14: "create a profile and username under "me" to register a
@@ -148,7 +150,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               SizedBox(height: t.space(6)),
               // Matt, 2026-11-19: "build a profile section in the app that allows us to set profile pictures and status
               // messages".
-              PaneSection(
+              // Not in a browser, which can't choose a picture yet (Sms.browser).
+              if (!Sms.browser) PaneSection(
                 title: 'Picture',
                 description: const Text('Shown to your friends, and to people in your spaces and circles who open your profile.'),
                 children: [
@@ -322,9 +325,9 @@ class _BuddiesScreenState extends State<BuddiesScreen> {
                     SettingRow(
                       icon: AppIcon(Lucide.userPlus, size: 18),
                       label: r.shown,
-                      hint: Text(r.name.isEmpty ? (r.bio.isEmpty ? 'Wants to be friends' : r.bio) : '@${r.username}${r.bio.isEmpty ? '' : ' · ${r.bio}'}'),
+                      hint: Text(requestLine(r)),
                       onPress: () => showChoices(context, title: '${r.shown} wants to be friends.', choices: [
-                        Choice('Accept', Lucide.check, () => b.accept(r)),
+                        Choice('Accept', Lucide.check, () => acceptRequest(context, r, buddies: b)),
                         Choice('Decline', Lucide.x, () => b.decline(r), danger: true),
                       ]),
                     ),

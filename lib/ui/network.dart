@@ -3,6 +3,7 @@ import 'package:glacier/glacier.dart';
 
 import '../art/app_icon.dart';
 import '../art/lucide.g.dart';
+import '../friends/groups.dart';
 import '../kit/settings_kit.dart';
 import '../kit/settings_type.dart';
 import '../net/carrier.dart';
@@ -15,6 +16,19 @@ import 'common.dart';
 import 'compose.dart';
 import 'settings.dart';
 import 'shell.dart';
+
+/// What one of the people the routes reach is called in Settings › Network: their name, else their address, else (no
+/// address of theirs being known here: a member of a group, say, or someone who asked to be a friend) the group they are
+/// in, else the start of their install's name. An address that is empty is none (found in review, 2026-11-23: their
+/// row was blank).
+String peerLabel(Peer p, {Iterable<Group>? groups}) {
+  final name = p.name?.trim() ?? '', address = p.address?.trim() ?? '';
+  if (name.isNotEmpty) return name;
+  if (address.isNotEmpty) return address;
+  final group = (groups ?? Groups.instance.all).where((g) => !g.gone && g.member(p.id) != null).firstOrNull;
+  if (group != null) return 'A member of ${group.title}';
+  return p.id.length > 8 ? p.id.substring(0, 8) : p.id;
+}
 
 /// How the network stands, in a line: Settings' row for it.
 String networkSummary() {
@@ -168,7 +182,7 @@ List<Widget> networkPane(BuildContext context, SettingsModel m) {
       PaneSection(
         title: 'Routes',
         description: const Text('The ways this phone reaches another, tried from the top. One that fails or gets no answer gives way to the next.'),
-        footer: Text(net.p2p == null
+        footer: Text(net.p2p == null && net.directProblem == null
             ? 'A route over the local network and a peer-to-peer one, with no server, are being made: they will be listed here, and the relay server can then be switched off.'
             : 'A route over the local network is being made: it will be listed here.'),
         children: [
@@ -183,6 +197,12 @@ List<Widget> networkPane(BuildContext context, SettingsModel m) {
         ],
       ),
     if (board != null && net.p2p != null) directSection(context, net.p2p!),
+    // A build with the direct route whose core could not be started (a library missing, or built for another machine):
+    // the other routes go on, and this says why there is no Direct among them.
+    if (board != null && net.p2p == null && net.directProblem != null)
+      PaneSection(title: 'Direct', children: [
+        SettingRow(key: const ValueKey('direct-problem'), icon: icon(Lucide.circleAlert), label: 'Direct isn\'t working on this device', hint: Text(net.directProblem!)),
+      ]),
     if (board != null && net.hub != null)
       PaneSection(
         title: 'Relay server',
@@ -237,9 +257,9 @@ List<Widget> networkPane(BuildContext context, SettingsModel m) {
           for (final p in net.people)
             SettingRow(
               icon: icon(Lucide.userRound),
-              label: p.name ?? p.address ?? p.id.substring(0, 8),
+              label: peerLabel(p),
               hint: Text(board == null ? '' : 'By ${board.routes(p, metered: true).map((c) => c.name).join(', ').ifEmpty('no route now')}'),
-              onPress: () => showChoices(context, title: 'Test the way to ${p.name ?? p.address ?? 'them'}', choices: [
+              onPress: () => showChoices(context, title: 'Test the way to ${peerLabel(p)}', choices: [
                 Choice('Send a test', Lucide.send, () => test(p)),
                 if (board?.carrier('hub') != null) Choice('By the relay server only', Lucide.globe, () => test(p, only: 'hub')),
                 if (board?.carrier('p2p') != null) Choice('By a direct link only', Lucide.link2, () => test(p, only: 'p2p')),
