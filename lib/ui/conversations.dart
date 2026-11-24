@@ -50,6 +50,10 @@ import '../inbox/inbox.dart';
 import '../friends/groups.dart';
 import 'thread.dart';
 import 'feedback_screen.dart' show FeedbackButton;
+import 'files_space/my_files.dart' show openMyFiles;
+import '../account/account.dart' show Account;
+import '../files/drive.dart' show Drive;
+import '../souls/souls_send.dart' show SoulsCard;
 import 'souls.dart' show SoulsChip;
 import 'window_chrome.dart' show MacChrome;
 import '../kit/semantic_colors.dart';
@@ -722,6 +726,14 @@ class _ConversationsScreenState extends State<ConversationsScreen> implements Co
             count: unread,
             onPress: unread > 0 ? () => _markAllRead(_section) : null,
           ),
+          // My files: the account's own drive (GMFB-37, @matt: "A private file drive for each account, not tied to any
+          // space"). Here, under the search, where a phone's list and a computer's sidebar both have it. Only with an
+          // account signed in to (the drive is made from its key), and not in a browser whose build has no Files.
+          if (!widget.archived && Sms.filesHere)
+            ListenableBuilder(
+              listenable: Account.instance,
+              builder: (context, _) => Account.instance.signedIn ? QuickRow(key: const ValueKey('my-files'), icon: Lucide.hardDrive, label: Drive.name, onPress: () => openMyFiles(context)) : const SizedBox.shrink(),
+            ),
           // In a browser too, words alone (it can't choose a picture yet), sent by the page's own fetch.
           if (!MacChrome.stripEnabled)
             QuickRow(key: const ValueKey('share-feedback'), icon: LucideMore.messageSquareWarning, label: 'Share feedback', onPress: () => FeedbackButton.open(context)),
@@ -1854,7 +1866,7 @@ class ConversationRow extends StatelessWidget {
                                         ),
                                         TextSpan(text: summary),
                                       ])
-                                    : TextSpan(text: c.error ? 'Not sent' : (reactionSnippet(c.snippet) ?? MessageFormat.plain(c.snippet)).replaceAll('\n', ' ')),
+                                    : TextSpan(text: c.error ? 'Not sent' : (reactionSnippet(c.snippet) ?? MessageFormat.plain(SoulsCard.preview(c.snippet))).replaceAll('\n', ' ')),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: pageText(t, t.fontSize('sm'), weight: unread ? 'medium' : 'regular', color: t.color(unread ? 'app-ink' : 'app-ink-2'), height: 1.35),
@@ -1905,7 +1917,7 @@ class ConversationRow extends StatelessWidget {
                   ? TextSpan(text: '» $summary', style: const TextStyle(fontStyle: FontStyle.italic))
                   : c.error
                       ? TextSpan(text: 'Not sent', style: TextStyle(color: selected ? d.onHighlight : t.danger))
-                      : TextSpan(text: (reactionSnippet(c.snippet) ?? MessageFormat.plain(c.snippet)).replaceAll('\n', ' '));
+                      : TextSpan(text: (reactionSnippet(c.snippet) ?? MessageFormat.plain(SoulsCard.preview(c.snippet))).replaceAll('\n', ' '));
           return DecoratedBox(
             decoration: BoxDecoration(
               color: selected ? d.highlight : (state.pressed ? t.color('app-paper-3') : const Color(0x00000000)),
