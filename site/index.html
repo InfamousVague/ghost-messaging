@@ -186,6 +186,7 @@
     <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></symbol>
     <symbol id="i-userx" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="m17 8 5 5"/><path d="m22 8-5 5"/></symbol>
     <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></symbol>
     <symbol id="i-zap" viewBox="0 0 24 24"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></symbol>
     <symbol id="i-code" viewBox="0 0 24 24"><path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/></symbol>
     <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
@@ -198,7 +199,7 @@
     <symbol id="i-folder" viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></symbol>
     <symbol id="i-foldersync" viewBox="0 0 24 24"><path d="M9 20H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v.5"/><path d="M12 10v4h4"/><path d="m12 14 1.535-1.605a5 5 0 0 1 8 1.5"/><path d="M22 22v-4h-4"/><path d="m22 18-1.535 1.605a5 5 0 0 1-8-1.5"/></symbol>
     <symbol id="i-rec" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="1"/></symbol>
-    <symbol id="i-film" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 3v18"/><path d="M3 7.5h4"/><path d="M3 12h18"/><path d="M3 16.5h4"/><path d="M17 3v18"/><path d="M17 7.5h4"/><path d="M17 16.5h4"/></symbol>
+    <symbol id="i-funnel" viewBox="0 0 24 24"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></symbol>
     <symbol id="i-captions" viewBox="0 0 24 24"><rect width="18" height="14" x="3" y="5" rx="2" ry="2"/><path d="M7 15h4"/><path d="M15 15h2"/><path d="M7 11h2"/><path d="M13 11h4"/></symbol>
     <symbol id="i-pause" viewBox="0 0 24 24"><rect x="14" y="4" width="4" height="16" rx="1"/><rect x="6" y="4" width="4" height="16" rx="1"/></symbol>
     <symbol id="i-play" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></symbol>
@@ -634,42 +635,46 @@
           </div>
         </article>
 
-        <article class="u-sticker ft-card" data-ft="watch">
-          <h3 class="u-h3 ft-name"><span class="u-badge"><svg class="u-i"><use href="#i-film"/></svg></span><span class="ft-title">Watch together</span><span class="ft-num" aria-hidden="true">05</span></h3>
-          <div class="ft-body" id="ft-watch">
-            <p class="ft-say">Play a video or a song from your shared files for everyone in the call, in step. Pause it, and it pauses for everyone.</p>
-            <div class="ft-meta"><ol class="ft-steps"><li>Pick a video</li><li>Plays in step</li><li>Pause for everyone</li></ol><span class="u-tag ft-plug"><svg class="u-i"><use href="#i-puzzle"/></svg><span>Plugin</span></span></div>
-            <div class="gm gm-fit ft-stage" data-mock="ft-watch" aria-hidden="true" inert>
-              <div class="gm-stage"><div class="gm-screen fw" data-view="play">
-                <div class="fw-pick">
-                  <div class="fd-bar"><span class="fd-ico"><svg class="gm-i"><use href="/mock/icons.svg#arrow-left"/></svg></span><span class="fd-bar__text"><b>Shared</b><small>Book Club</small></span></div>
-                  <div class="fd-files">
-                    <div class="fd-file js-film" data-hue="purple"><span class="gm-tile"><svg class="gm-i"><use href="/mock/icons.svg#film"/></svg></span><span class="fd-file__main"><span class="fd-file__top"><span class="fd-file__name">Highlights.mp4</span><span class="fd-file__hint">12.4 GB · You</span></span></span></div>
-                    <div class="fd-file" data-hue="amber"><span class="gm-tile"><svg class="gm-i"><use href="/mock/icons.svg#folder"/></svg></span><span class="fd-file__main"><span class="fd-file__top"><span class="fd-file__name">Trip</span><span class="fd-file__hint">8 files</span></span></span><svg class="gm-i gm-chev"><use href="/mock/icons.svg#chevron-right"/></svg></div>
-                    <div class="fd-file" data-hue="blue"><span class="gm-tile"><svg class="gm-i"><use href="/mock/icons.svg#file-text"/></svg></span><span class="fd-file__main"><span class="fd-file__top"><span class="fd-file__name">menu.pdf</span><span class="fd-file__hint">1.2 MB · Maya</span></span></span></div>
+        <article class="u-sticker ft-card" data-ft="sorting">
+          <h3 class="u-h3 ft-name"><span class="u-badge"><svg class="u-i"><use href="#i-funnel"/></svg></span><span class="ft-title">Spam filters</span><span class="ft-num" aria-hidden="true">05</span></h3>
+          <div class="ft-body" id="ft-sorting">
+            <p class="ft-say">Spam moves to its own tab. Strangers' texts are sorted by kind, and political ones stay hidden. Someone new answers a small question first. All on your device.</p>
+            <div class="ft-meta"><ol class="ft-steps"><li>Spam, in its own tab</li><li>Political texts hidden</li><li>Strangers are asked</li></ol><span class="u-tag ft-plug"><svg class="u-i"><use href="#i-puzzle"/></svg><span>Plugins</span></span></div>
+            <div class="gm gm-fit ft-stage" data-mock="ft-sorting" aria-hidden="true" inert>
+              <div class="gm-stage"><div class="gm-screen fm">
+                <div class="fm-top">
+                  <div class="gm-seg fm-tabs">
+                    <span class="gm-seg__tab" aria-selected="true"><svg class="gm-i"><use href="/mock/icons.svg#message-circle"/></svg>Messages</span>
+                    <span class="gm-seg__tab"><svg class="gm-i"><use href="/mock/icons.svg#key-round"/></svg>Codes<i>4</i></span>
+                    <span class="gm-seg__tab js-spam"><svg class="gm-i"><use href="/mock/icons.svg#triangle-alert"/></svg>Spam<i class="js-spam-n">3</i></span>
                   </div>
-                  <div class="fw-incall"><i></i><b>Friday hang</b><span>In the call: you, Maya, Jo, Sam</span></div>
-                  <div class="fd-menu">
-                    <div class="fd-menu__title">Highlights.mp4</div>
-                    <div class="fd-menu__item"><svg class="gm-i"><use href="/mock/icons.svg#play"/></svg>Play</div>
-                    <div class="fd-menu__item js-together"><svg class="gm-i"><use href="/mock/icons.svg#film"/></svg>Watch together in the call</div>
-                    <div class="fd-menu__item"><svg class="gm-i"><use href="/mock/icons.svg#share-2"/></svg>Share</div>
-                  </div>
+                  <span class="gm-roundbtn fm-funnel js-funnel"><svg class="gm-i"><use href="/mock/icons.svg#funnel"/></svg><i class="js-hidden-n">7</i></span>
                 </div>
-                <div class="fw-play">
-                  <div class="fw-main">
-                    <div class="fw-player">
-                      <div class="fw-film"><i class="fw-sun"></i><i class="fw-hills"></i><i class="fw-hills fw-hills--near"></i></div>
-                      <div class="fw-ctl"><span class="fw-btn"><svg class="gm-i"><use href="/mock/icons.svg#pause"/></svg></span><span class="fw-now">0:06</span><span class="fw-seek"><i></i></span><span>3:10</span></div>
-                    </div>
-                    <div class="fw-people">
-                      <small>In step</small>
-                      <div class="fw-who"><span class="gm-av" data-hue="magenta">M</span><b>Maya</b><time>0:06</time><svg class="gm-i"><use href="/mock/icons.svg#play"/></svg></div>
-                      <div class="fw-who"><span class="gm-av" data-hue="amber">J</span><b>Jo</b><time>0:06</time><svg class="gm-i"><use href="/mock/icons.svg#play"/></svg></div>
-                      <div class="fw-who"><span class="gm-av" data-hue="blue">S</span><b>Sam</b><time>0:06</time><svg class="gm-i"><use href="/mock/icons.svg#play"/></svg></div>
-                    </div>
+                <div class="fm-list js-list">
+                  <div class="fm-heldrow js-heldrow is-out"><svg class="gm-i"><use href="/mock/icons.svg#shield-check"/></svg><span>1 held for a human check</span><svg class="gm-i"><use href="/mock/icons.svg#chevron-right"/></svg></div>
+                  <div class="fm-row is-unread js-kai"><span class="gm-av" data-hue="cyan">K</span><span class="fm-row__main"><b>Kai</b><small>12</small></span><time>now</time><i class="fm-dot"></i></div>
+                  <div class="fm-row is-unread"><span class="gm-av" data-hue="magenta">MC</span><span class="fm-row__main"><b>Maya Chen</b><small>Sounds good, see you at 7!</small></span><time>5:29 PM</time><i class="fm-dot"></i></div>
+                  <div class="fm-row"><span class="gm-av" data-hue="coral">D</span><span class="fm-row__main"><b>Dad</b><small>Call me when you land</small></span><time>12:33 PM</time></div>
+                  <div class="fm-row"><span class="gm-av" data-hue="indigo">RF</span><span class="fm-row__main"><b>Riley Fox</b><small>Only our two phones can read this now</small></span><time>Thu</time></div>
+                  <div class="fm-row"><span class="gm-av" data-hue="blue"><svg class="gm-i"><use href="/mock/icons.svg#user-round"/></svg></span><span class="fm-row__main"><b>+1 555 987 0009</b><small>Your package is out for delivery and will arrive by 8pm</small></span><time>Wed</time></div>
+                </div>
+                <div class="fm-foot"><b class="js-hidden-n">7</b> hidden · <u>Show</u></div>
+                <div class="fd-menu fm-menu">
+                  <div class="fd-menu__item"><svg class="gm-i"><use href="/mock/icons.svg#list-filter"/></svg><span>All</span></div>
+                  <i class="fm-sep"></i>
+                  <div class="fd-menu__item"><svg class="gm-i"><use href="/mock/icons.svg#message-circle"/></svg><span>Personal &amp; other</span><i>6</i><svg class="gm-i fm-tick"><use href="/mock/icons.svg#check"/></svg></div>
+                  <div class="fd-menu__item is-hidden js-political"><svg class="gm-i"><use href="/mock/icons.svg#landmark"/></svg><span>Political</span><i class="js-political-n">2</i></div>
+                  <div class="fd-menu__item is-hidden"><svg class="gm-i"><use href="/mock/icons.svg#megaphone"/></svg><span>Sales &amp; solicitors</span><i>2</i></div>
+                  <div class="fd-menu__item is-hidden"><svg class="gm-i"><use href="/mock/icons.svg#triangle-alert"/></svg><span>Spam</span><i class="js-spam-n">3</i></div>
+                  <div class="fd-menu__item"><svg class="gm-i"><use href="/mock/icons.svg#package"/></svg><span>Deliveries &amp; tracking</span><i>2</i><svg class="gm-i fm-tick"><use href="/mock/icons.svg#check"/></svg></div>
+                </div>
+                <div class="fm-held is-on is-passed">
+                  <div class="fm-held__head"><span class="gm-av" data-hue="cyan">K</span><span class="fm-held__who"><b>Kai</b><small class="js-state">Right answer · in Messages now</small></span><span class="fd-fill"></span><span class="fm-held__tag"><svg class="gm-i"><use href="/mock/icons.svg#shield-check"/></svg><span>Human check</span></span></div>
+                  <div class="fm-held__msgs">
+                    <div class="fm-say is-in"><div class="gm-msg gm-msg--in" data-g="solo"><div class="gm-bubble">Hey! What are you doing tonight?</div></div></div>
+                    <div class="fm-say is-in"><div class="gm-msg gm-msg--out" data-g="solo"><div class="gm-bubble">Automatic check from my messaging app: <span class="fm-more">I see messages from new people once they answer this. </span>What is seven plus five? Reply with the number.</div></div></div>
+                    <div class="fm-say is-in"><div class="gm-msg gm-msg--in" data-g="solo"><div class="gm-bubble">12</div></div></div>
                   </div>
-                  <div class="fd-line"><svg class="gm-i"><use href="/mock/icons.svg#film"/></svg><span class="fd-line__text"><b>You're watching Highlights.mp4 together</b></span><span class="fd-line__act">Stop</span></div>
                 </div>
                 <i class="fd-tap"></i>
               </div></div>

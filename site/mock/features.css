@@ -371,42 +371,131 @@ html[data-theme='light'] .gm:not(.gm-dark) .fp-peek { box-shadow: 0 -10px 30px r
 .fp-peek .js-said.is-swap { animation: fp-swap 380ms var(--ease) both; }
 @keyframes fp-swap { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
 
-/* --- watch together: a video picked in a call, playing for everyone in step -------------------------------- */
-.fw-pick, .fw-play { position: absolute; inset: 0; display: flex; flex-direction: column; transition: opacity 320ms ease, visibility 0s; }
-.fw[data-view='pick'] .fw-play, .fw[data-view='play'] .fw-pick { opacity: 0; visibility: hidden; transition: opacity 320ms ease, visibility 0s linear 320ms; }
-.fw-pick .fd-files { padding-top: 10px; }
-.fw-pick .fd-menu { right: 16px; top: 96px; transform-origin: 80% 0; }
-.fw-incall { flex: none; display: flex; align-items: center; gap: 9px; margin: 0 12px 12px; height: 38px; padding: 0 14px; border-radius: 999px; background: var(--online-wash); border: 1.5px solid color-mix(in srgb, var(--online) 70%, transparent); font-size: 12.5px; white-space: nowrap; }
-.fw-incall i { width: 7px; height: 7px; border-radius: 50%; background: var(--online); animation: gm-breathe 2.4s ease-in-out infinite; }
-.fw-incall b { font-weight: 700; }
-.fw-incall span { color: var(--online-ink); overflow: hidden; text-overflow: ellipsis; }
-.fw-play { padding: 12px; gap: 10px; }
-.fw-main { flex: 1; min-height: 0; display: flex; gap: 12px; }
-.fw-player { position: relative; flex: 1.75 1 0; min-width: 0; border-radius: 12px; overflow: hidden; background: #10131f; }
-/* The film: a road at dusk, the sun going down and the hills going by while it plays. */
-.fw-film { position: absolute; inset: 0; overflow: hidden; background: linear-gradient(180deg, #24305e 0%, #6b4c8a 46%, #e08b5d 82%, #f2b866 100%); }
-.fw-film i { position: absolute; }
-.fw-sun { left: 62%; top: 34%; width: 15%; aspect-ratio: 1; border-radius: 50%; background: #ffe2a6; box-shadow: 0 0 36px 10px rgb(255 214 150 / .5); animation: fw-sun 14s linear infinite; animation-play-state: paused; }
-.fw-hills { left: 0; bottom: 0; width: 200%; height: 46%; background: #2b2545; clip-path: polygon(0 62%, 6% 40%, 13% 58%, 21% 26%, 30% 60%, 38% 42%, 44% 54%, 50% 62%, 56% 40%, 63% 58%, 71% 26%, 80% 60%, 88% 42%, 94% 54%, 100% 62%, 100% 100%, 0 100%); animation: fw-pan 9s linear infinite; animation-play-state: paused; }
-.fw-hills--near { height: 26%; background: #171428; clip-path: polygon(0 50%, 8% 20%, 17% 55%, 27% 30%, 36% 60%, 50% 50%, 58% 20%, 67% 55%, 77% 30%, 86% 60%, 100% 50%, 100% 100%, 0 100%); animation-duration: 4.5s; }
-.fw.is-playing .fw-film i { animation-play-state: running; }
-@keyframes fw-pan { to { transform: translateX(-50%); } }
-@keyframes fw-sun { to { transform: translateY(160%); } }
-.fw-ctl { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; gap: 9px; padding: 22px 12px 9px; background: linear-gradient(180deg, transparent, rgb(0 0 0 / .62)); color: #fff; font-size: 11.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
-.fw-btn { flex: none; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; background: rgb(255 255 255 / .18); transition: transform 120ms var(--ease), filter var(--fast); }
-.fw-btn .gm-i { width: 15px; height: 15px; --gm-wash: 0; }
-.fw-seek { flex: 1; height: 4px; border-radius: 2px; background: rgb(255 255 255 / .28); overflow: hidden; }
-.fw-seek i { display: block; height: 100%; width: var(--p, 4%); border-radius: 2px; background: #fff; transition: width 100ms linear; }
-.fw-people { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 5px; }
-.fw-people > small { padding: 0 4px 2px; font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--ink-3); white-space: nowrap; }
-.fw-who { display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 9px 0 6px; border-radius: 10px; background: var(--paper-2); font-size: 13px; }
-.fw-who .gm-av { --size: 22px; }
-.fw-who b { flex: 1; min-width: 0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.fw-who time { font-size: 12px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
-.fw-who .gm-i { width: 13px; height: 13px; color: var(--ink-3); --gm-wash: 0; }
-.fw.is-playing .fw-who .gm-i { color: var(--online-ink); }
-.fw-who.is-tick time { animation: fw-tick 320ms var(--ease); }
-@keyframes fw-tick { from { color: var(--ink); transform: translateY(-2px); } to { transform: none; } }
+/* --- spam filters: what comes is sorted as it comes: spam to its tab, a hidden kind to the filter, a stranger asked --- */
+/* Where Watch together was (Matt, 2026-11-28: "replace the watch together section with a section showing off the
+   spam filers, and human checks and message sorting (political ad filtering etc)"). Three plugins on one list: the
+   Spam filter (lib/plugins/spam.dart), Kinds of text (lib/plugins/kinds.dart) and Human check
+   (lib/plugins/human_check.dart), each drawn as the app draws it and worded as the app words it.
+
+   A stage's height is what the card has left for it, in the stage's own pixels: about 300 on most screens, but as
+   little as 207 where the page is a little wider than a phone (the deck is a column there and the stage is drawn up
+   to half as large again) and 271 on a 1200px one. So the screen is a container, and the rules at this part's end
+   ask how tall it is: the filter's menu is drawn smaller on a short one, and the held chat's sheet says less, or
+   takes the whole of the list's place.
+
+   The list's head (lib/ui/conversations.dart): its tabs as one toggle, and beside them the filter, with how many
+   conversations it hides. */
+.fm { container: fm / size; }
+.fm-top { flex: none; display: flex; align-items: center; gap: 8px; padding: 9px 10px 7px; }
+.fm-tabs { flex: 1; min-width: 0; height: 36px; }
+.fm-tabs .gm-seg__tab { gap: 5px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+.fm-tabs .gm-seg__tab .gm-i { width: 15px; height: 15px; --gm-wash: 0; }
+.fm-tabs .gm-seg__tab i { font-style: normal; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--ink-3); }
+.fm-funnel { position: relative; width: 36px; height: 36px; }
+.fm-funnel .gm-i { width: 17px; height: 17px; --gm-wash: 0; }
+.fm-funnel i {
+  position: absolute; top: -4px; right: -4px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 9px; background: var(--ink); color: var(--paper);
+  font-size: 10.5px; font-style: normal; font-weight: 700; line-height: 17px; text-align: center; font-variant-numeric: tabular-nums;
+}
+/* A count that has just gone up. */
+.fm .is-bumped { animation: fm-bump 460ms var(--ease-spring); }
+@keyframes fm-bump { 35% { transform: scale(1.14); } }
+/* The list: a conversation is a face, a name over its last words, and when. What runs past its foot fades out. */
+.fm-list { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 4px; padding: 2px 10px 0; overflow: hidden; }
+.fm-list::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 18px; background: linear-gradient(transparent, var(--paper)); pointer-events: none; }
+.fm-row, .fm-heldrow { flex: none; transition: height 360ms var(--ease), margin 360ms var(--ease), opacity 260ms ease, background-color 300ms ease, box-shadow 300ms ease; }
+.fm-row { position: relative; display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 12px 0 9px; border-radius: 12px; background: var(--paper-2); overflow: hidden; }
+.fm-row .gm-av { --size: 30px; }
+.fm-row .gm-av .gm-i { width: 16px; height: 16px; }
+.fm-row__main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.fm-row__main b { font-size: 13.5px; font-weight: 600; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fm-row__main small { font-size: 12.5px; line-height: 1.3; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fm-row time { flex: none; font-size: 11px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.fm-row.is-unread b { font-weight: 700; }
+.fm-row.is-unread small { color: var(--ink); }
+.fm-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--unread); }
+/* A row that is not there yet, or has gone: it takes no room, and none of the list's gap. */
+.fm-list > .is-out { height: 0; margin-bottom: -4px; border-width: 0; opacity: 0; }
+/* The row over Messages while anyone is held (lib/plugins/human_check.dart, HeldRow): how many, and the way to them. */
+.fm-heldrow { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 9px 0 12px; border-radius: 12px; background: var(--paper-2); border: 1px solid var(--rule); font-size: 12.5px; font-weight: 500; color: var(--ink-2); overflow: hidden; }
+.fm-heldrow span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fm-heldrow .gm-i { width: 15px; height: 15px; --gm-wash: 0; }
+.fm-heldrow .gm-i:last-child { color: var(--ink-3); }
+/* A text just come from a number not in the contacts, while it is looked at: then what it was taken for stands on
+   it, in that kind's colour, and it goes where the kind is kept. */
+.fm-row.is-told { background: color-mix(in srgb, var(--hue) 11%, var(--paper-2)); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--hue) 72%, transparent); }
+.fm-kind {
+  flex: none; display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 9px 0 7px; border-radius: 999px;
+  background: color-mix(in srgb, var(--hue) 20%, transparent); color: var(--hue); font-size: 11.5px; font-weight: 600; white-space: nowrap;
+  opacity: 0; transform: scale(.82); transform-origin: 100% 50%; transition: opacity 220ms ease, transform 340ms var(--ease-spring);
+}
+.fm-kind .gm-i { width: 13px; height: 13px; --gm-wash: 0; }
+.fm-row.is-told .fm-kind { opacity: 1; transform: none; }
+.fm-ghost { position: absolute; left: 0; top: 0; z-index: 15; margin: 0; pointer-events: none; transform-origin: 50% 50%; transition: transform 600ms cubic-bezier(.5, 0, .25, 1), opacity 600ms ease-in; }
+/* What the filter hides is said at the list's foot, with the way to see it. */
+.fm-foot { flex: none; display: flex; align-items: center; justify-content: center; gap: .3em; height: 30px; font-size: 12px; font-weight: 500; color: var(--ink-3); }
+.fm-foot b { display: inline-block; font-weight: 600; font-variant-numeric: tabular-nums; }
+.fm-foot u { text-underline-offset: 2px; }
+/* The filter's menu (lib/ui/conversations.dart, _filterRows): each kind with how many, ticked where Messages shows
+   it and faint where it does not. */
+.fm-menu { right: 10px; top: 50px; min-width: 236px; transform-origin: 92% 0; transform: scale(calc(.94 * var(--fm-menu, 1))); }
+.fm-menu.is-on { transform: scale(var(--fm-menu, 1)); }
+.fm-menu .fd-menu__item { gap: 9px; padding: 6px 9px; font-size: 13.5px; }
+.fm-menu .fd-menu__item > .gm-i { width: 16px; height: 16px; --gm-wash: 0; }
+.fm-menu .fd-menu__item > span { flex: 1; min-width: 0; white-space: nowrap; }
+.fm-menu .fd-menu__item > i { font-style: normal; font-variant-numeric: tabular-nums; opacity: .6; }
+.fm-menu .fd-menu__item > .gm-i.fm-tick { color: var(--ink); }
+.fm-menu .fd-menu__item:not(:has(.fm-tick))::after { content: ''; flex: none; width: 16px; }
+.fm-menu .fd-menu__item.is-hidden > * { opacity: .5; }
+.fm-menu .fd-menu__item.is-hidden > i { opacity: .34; }
+.fm-menu .fd-menu__item.is-lit { animation: fm-lit 1900ms ease both; }
+@keyframes fm-lit { 10%, 86% { background-color: var(--paper-3); } }
+.fm-sep { display: block; height: 1px; margin: 4px 9px; background: var(--border); }
+/* Someone new, held: their first words, the question sent back by itself, their answer, and where it stands. A
+   sheet over the list's foot, as tall as what is said in it and never over the tabs. */
+.fm-held {
+  position: absolute; left: 10px; right: 10px; bottom: 6px; z-index: 8; max-height: calc(100% - 58px); display: flex; flex-direction: column; padding: 9px 11px 10px;
+  border-radius: 16px; background: var(--paper); border: 1px solid var(--border); box-shadow: 0 -10px 30px rgb(0 0 0 / .45);
+  opacity: 0; transform: translateY(18px); transition: opacity 280ms ease, transform 420ms var(--ease);
+}
+html[data-theme='light'] .gm:not(.gm-dark) .fm-held { box-shadow: 0 -10px 30px rgb(0 0 0 / .12); }
+.fm-held.is-on { opacity: 1; transform: none; }
+.fm-held__head { flex: none; display: flex; align-items: center; gap: 9px; }
+.fm-held__head .gm-av { --size: 26px; }
+.fm-held__who { min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
+.fm-held__who b { font-size: 13px; font-weight: 700; }
+.fm-held__who small { font-size: 11.5px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color 300ms ease; }
+.fm-held.is-passed .fm-held__who small { color: var(--online-ink); font-weight: 600; }
+.fm-held__who small.is-swap { animation: fm-swap 380ms var(--ease) both; }
+@keyframes fm-swap { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.fm-held__tag { flex: none; display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 500; color: var(--ink-3); white-space: nowrap; }
+.fm-held__tag .gm-i { width: 14px; height: 14px; --gm-wash: 0; }
+/* What is said is held to the sheet's foot, as a conversation is: where the sheet has no room for all of it, the
+   oldest goes up out of sight, fading as it goes. */
+.fm-held__msgs {
+  min-height: 0; display: flex; flex-direction: column; justify-content: flex-end; gap: 4px; padding-top: 6px; overflow: hidden;
+  -webkit-mask-image: linear-gradient(transparent, #000 6px); mask-image: linear-gradient(transparent, #000 6px);
+}
+/* Each thing said, in a box of its own that opens for it (the kit's own bubble inside, with no room kept over it). */
+.fm-say { flex: none; display: flex; flex-direction: column; max-height: 120px; overflow: hidden; transition: max-height 340ms var(--ease), opacity 280ms ease, margin 340ms var(--ease); }
+.fm-say:not(.is-in) { max-height: 0; margin-top: -4px; opacity: 0; }
+.fm-say .gm-msg { margin: 0; max-width: 86%; }
+.fm-say .gm-bubble { padding: 4px 10px; font-size: 12.5px; line-height: 1.3; }
+/* On a short stage. The menu, smaller, so that its last row is in sight. */
+@container fm (max-height: 258px) { .fm-menu { --fm-menu: .9; } }
+@container fm (max-height: 240px) { .fm-menu { --fm-menu: .82; } }
+@container fm (max-height: 224px) { .fm-menu { --fm-menu: .74; } }
+/* The check's own words without their middle sentence, which leaves the sheet under the row the chat comes to. */
+@container fm (max-height: 284px) { .fm-more { display: none; } }
+/* A narrow stage has no shorter way to say it: there the sheet takes the list's whole place, under the tabs, and is
+   closer set. */
+@container fm (max-width: 400px) and (max-height: 276px) {
+  .fm-held { top: 48px; bottom: 5px; max-height: none; padding: 7px 11px 8px; }
+  .fm-held__msgs { flex: 1; padding-top: 4px; }
+}
+/* On the shortest of those there is room for the question and its answer, not for the first words too: rather than
+   half of them under the sheet's head, they are left out. */
+@container fm (max-width: 400px) and (max-height: 223px) { .fm-say:first-child { display: none; } }
 
 /* --- live captions: a call, and what is said in it written under the faces ----------------------------------- */
 .fc-faces { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: space-evenly; padding: 4px 16px 0; }
@@ -455,12 +544,13 @@ html[data-theme='light'] .gm:not(.gm-dark) .fp-peek { box-shadow: 0 -10px 30px r
   .fp-plug__text small { -webkit-line-clamp: 1; }
   .fp-peek { left: 9px; right: 9px; bottom: 9px; }
   .fp-peek__tag { font-size: 11px; }
-  .fw-main { flex-direction: column; gap: 8px; }
-  .fw-player { flex: 1 1 0; }
-  .fw-people { flex: none; flex-direction: row; gap: 6px; }
-  .fw-people > small { display: none; }
-  .fw-who { flex: 1 1 0; min-width: 0; padding: 0 7px 0 5px; gap: 6px; }
-  .fw-who b { display: none; }
-  .fw-who time { flex: 1; }
+  /* Spam filters: closer set, the check's own words shorter, and the plugin's name left to its sign. */
+  .fm-top { padding: 8px 8px 6px; }
+  .fm-tabs .gm-seg__tab { gap: 4px; font-size: 12.5px; }
+  .fm-list { padding-inline: 8px; }
+  .fm-menu { right: 8px; top: 48px; min-width: 226px; }
+  .fm-held { left: 8px; right: 8px; }
+  .fm-say .gm-msg { max-width: 92%; }
+  .fm-held__tag span, .fm-more { display: none; }
   .fc-face .gm-rip { --size: 42px; }
 }

@@ -21,7 +21,7 @@ const names = new Set([
   'smartphone', 'laptop', 'monitor', 'download', 'play', 'pause', 'minimize', 'maximize',
   // The feature walkthroughs' own (site/mock/features.js): files and folders, a recording, the Marketplace, captions.
   'folder', 'folder-open', 'folder-input', 'film', 'hard-drive-upload', 'circle-dot', 'circle-stop', 'type',
-  'refresh-cw', 'share-2', 'languages',
+  'refresh-cw', 'languages', 'landmark', 'megaphone', 'package',
   ...process.argv.slice(2),
 ]);
 

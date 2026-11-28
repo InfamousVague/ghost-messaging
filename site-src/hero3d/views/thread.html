@@ -1,7 +1,8 @@
-<!-- The outer screen: one conversation (test/shots/2-thread-*.png), the newest of it as a screen this short shows it,
-     under the row its camera sits in.
-     Each piece is the app's, drawn by the kit (site/mock/hero.css gives each its box); site/mock/hero.js makes the
-     composer send, the chips type and the reactions bounce. -->
+<!-- The outer screen: one conversation, as a screen this short shows it under the row its camera sits in. It plays
+     in order (Matt, 2026-11-27: "make it reply then animate in the next message and the reactions"): your reply is
+     typed and sent under what it answers, then the next message comes and the reactions land. So the reply, its
+     receipt, the next message and the reactions are layers that start empty or away, and site/mock/hero.js fills
+     them when site/hero3d.js says to (each a piece of the app drawn by the kit; site/mock/hero.css gives it its box). -->
 <div class="gm h3-pane" data-screen="cover" data-view="thread" data-hero>
   <div class="h3-l" data-name="header" data-z="2.2" data-plate style="left:0px;top:62px;width:412px"><div class="gm gm-fit gm-clear" data-mock="x-header"><div class="gm-stage">
   <header class="gm-head">

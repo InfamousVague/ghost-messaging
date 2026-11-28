@@ -267,51 +267,87 @@
     await x.wait(2600);
   }
 
-  /* --- watch together: a video picked in a call plays for everyone in step, and pauses for everyone ---------- */
-  async function watch(x) {
-    const scr = x.screen, film = x.$('.js-film'), menu = x.$('.fd-menu'), item = x.$('.js-together');
-    const btn = x.$('.fw-btn'), now = x.$('.fw-now'), seek = x.$('.fw-seek i'), people = x.$$('.fw-who');
-    let t = 0;
-    const draw = (tick) => {
-      const at = `0:${String(Math.floor(t + 1e-6)).padStart(2, '0')}`;
-      if (now.textContent !== at) {
-        now.textContent = at;
-        for (const p of people) {
-          p.querySelector('time').textContent = at;
-          if (tick) { p.classList.remove('is-tick'); p.offsetWidth; p.classList.add('is-tick'); }
-        }
-      }
-      seek.style.setProperty('--p', (3 + (t / 190) * 97).toFixed(2) + '%');
+  /* --- spam filters: what comes is sorted as it comes: spam to its tab, a hidden kind to the filter, and someone
+     new asked a small question before they are let in ------------------------------------------------------- */
+  // The numbers add up as the app's do: the filter's count is every conversation it keeps out of Messages, Spam's
+  // among them (lib/plugins/list.dart, hiddenCount), so a text sent to Spam and one of a hidden kind each add one.
+  async function sorting(x) {
+    const scr = x.screen, spam = x.$('.js-spam'), funnel = x.$('.js-funnel'), foot = x.$('.fm-foot b');
+    const menu = x.$('.fm-menu'), political = x.$('.js-political'), heldRow = x.$('.js-heldrow'), kai = x.$('.js-kai');
+    const sheet = x.$('.fm-held'), state = x.$('.js-state'), said = x.$$('.fm-say');
+    const count = (sel, n) => x.$$(sel).forEach((el) => { el.textContent = n; });
+    const bump = (...els) => els.forEach((el) => { el.classList.remove('is-bumped'); el.offsetWidth; el.classList.add('is-bumped'); });
+    // Where a held chat stands, as the app's Held page words it.
+    const stand = (words, passed = false) => {
+      state.textContent = words; sheet.classList.toggle('is-passed', passed);
+      state.classList.remove('is-swap'); state.offsetWidth; state.classList.add('is-swap');
     };
-    const playing = (on) => { scr.classList.toggle('is-playing', on); icon(btn, on ? 'pause' : 'play'); people.forEach((p) => icon(p, on ? 'play' : 'pause')); };
-    const roll = async (seconds) => { for (let n = Math.round(seconds * 10); n > 0; n--) { await x.wait(100); t += 0.1; draw(true); } };
-    // The first frame: the circle's files, with a call going on.
-    scr.dataset.view = 'pick'; now.textContent = ''; playing(false); draw(false);
-    people.forEach((p) => p.classList.remove('is-tick'));
+    // A text from a number not in the contacts comes to the head of the list and is looked at; what it was taken for
+    // then stands on it.
+    const come = async (hue, from, words, sign, kind) => {
+      const row = document.createElement('div');
+      row.className = 'fm-row fm-in is-unread is-out'; row.dataset.hue = hue;
+      row.innerHTML = `<span class="gm-av"><svg class="gm-i"><use href="${ICONS}user-round"/></svg></span>`
+        + `<span class="fm-row__main"><b>${from}</b><small>${words}</small></span>`
+        + `<span class="fm-kind"><svg class="gm-i"><use href="${ICONS}${sign}"/></svg>${kind}</span>`;
+      heldRow.after(row); row.offsetWidth; row.classList.remove('is-out');
+      await x.wait(800);
+      row.classList.add('is-told');
+      await x.wait(950);
+      return row;
+    };
+    // It leaves the list for where its kind is kept: drawn smaller as it goes, to end inside what it goes into.
+    const keep = async (row, to) => {
+      const a = x.pos(row), b = x.pos(to), g = row.cloneNode(true);
+      g.classList.add('fm-ghost');
+      g.style.width = a.w + 'px'; g.style.transition = 'none'; g.style.transform = `translate(${a.x}px, ${a.y}px)`;
+      scr.append(g); g.offsetWidth; g.style.transition = '';
+      g.style.transform = `translate(${b.x + (b.w - a.w) / 2}px, ${b.y + (b.h - a.h) / 2}px) scale(${Math.min(.12, b.w * .9 / a.w).toFixed(3)}, .5)`;
+      g.style.opacity = '.25';
+      row.classList.add('is-out');
+      try { await x.wait(560); } finally { g.remove(); row.remove(); }
+    };
+    // The first frame: nothing new come: two in Spam, five conversations hidden, and no one held.
+    x.$$('.fm-in, .fm-ghost').forEach((el) => el.remove());
+    count('.js-spam-n', 2); count('.js-hidden-n', 5); count('.js-political-n', 1);
+    [spam, funnel, foot].forEach((el) => el.classList.remove('is-bumped'));
+    political.classList.remove('is-lit');
+    heldRow.classList.add('is-out'); kai.classList.add('is-out');
+    sheet.classList.remove('is-on', 'is-passed'); said.forEach((m, n) => m.classList.toggle('is-in', n === 0));
+    state.classList.remove('is-swap'); state.textContent = 'New on Telegram · about to be asked';
     await x.ready();
 
-    x.step(0);   // held for its menu, and Watch together chosen
+    x.step(0);   // a text that looks like spam: to the Spam tab, which counts it, and out of Messages
+    await x.wait(300);
+    let row = await come('red', '+1 555 987 0002', 'Congratulations! You\'ve won a $1,000 gift card. Claim now: prize.example/win', 'triangle-alert', 'Looks like spam');
+    await keep(row, spam);
+    count('.js-spam-n', 3); count('.js-hidden-n', 6); bump(spam);
+    await x.wait(900);
+
+    x.step(1);   // a political one: sorted as that kind, which the filter keeps out of Messages until it is shown
+    row = await come('amber', '+1 555 987 0044', 'Polls open Tuesday. Can we count on your vote? Reply STOP to opt out', 'landmark', 'Political');
+    await keep(row, funnel);
+    count('.js-hidden-n', 7); count('.js-political-n', 2); bump(funnel, foot);
+    await x.wait(500);
+    await x.tap(funnel);
+    menu.classList.add('is-on'); political.classList.add('is-lit');
+    x.lift();
+    await x.wait(1900);
+    menu.classList.remove('is-on');
+    await x.wait(400);
+
+    x.step(2);   // someone new on Telegram: held without a sound, asked by the app, and let in on a right answer
+    heldRow.classList.remove('is-out');
     await x.wait(700);
-    await x.tap(film, { hold: 520 });
-    menu.classList.add('is-on');
-    await x.wait(750);
-    await x.tap(item);
-    menu.classList.remove('is-on'); x.lift();
-    await x.wait(220);
-    scr.dataset.view = 'play';
-    await x.wait(520);
-
-    x.step(1);   // the same second on every device
-    playing(true);
-    await roll(4.2);
-
-    x.step(2);   // paused here is paused for all of them
-    await x.tap(btn);
-    playing(false);
-    await x.wait(1500);
-    await x.tap(btn);
-    playing(true); x.lift();
-    await roll(1.9);
+    sheet.classList.add('is-on');
+    await x.wait(1100);
+    said[1].classList.add('is-in'); stand('Asked · waiting for an answer');
+    await x.wait(1600);
+    said[2].classList.add('is-in');
+    await x.wait(900);
+    stand('Right answer · in Messages now', true);
+    heldRow.classList.add('is-out'); kai.classList.remove('is-out');
+    await x.wait(2200);
   }
 
   /* --- live captions: turned on in a call, each line named as it is said -------------------------------------- */
@@ -360,7 +396,7 @@
     await x.wait(1500);
   }
 
-  const demos = { files, sync, rec, plugins, watch, captions };
+  const demos = { files, sync, rec, plugins, sorting, captions };
   /* What a stage needs drawn by script even while it is still: the recording's waveforms. */
   const stills = { rec: drawRec };
 
