@@ -62,12 +62,14 @@
     content: ""; position: absolute; inset: 0; z-index: 0;
     background: linear-gradient(90deg, rgba(4,4,6,.92) 0%, rgba(4,4,6,.6) 45%, rgba(4,4,6,.15) 100%), linear-gradient(0deg, rgba(4,4,6,.9), transparent 35%);
   }
-  .hero .u-wrap { position: relative; z-index: 1; display: grid; grid-template-columns: 1.05fr .95fr; gap: 1rem; align-items: center; padding-top: 3.5rem; padding-bottom: 4rem; min-height: 46rem; }
+  .hero .u-wrap { position: relative; z-index: 1; display: grid; grid-template-columns: 1.05fr .95fr; gap: 1rem; align-items: center; padding-top: 3.5rem; padding-bottom: 4rem; min-height: calc(46rem + var(--u-wide) * .25); }
   @media (max-width: 940px) { .hero .u-wrap { grid-template-columns: minmax(0, 1fr); padding-top: 2.5rem; min-height: 0; } }
   .hero .u-needle { left: 64%; height: 135%; width: 2px; opacity: .55; z-index: 0; }
   @media (max-width: 940px) { .hero .u-needle { left: 93%; height: 30%; bottom: auto; top: -4%; transform-origin: 50% 0; opacity: .4; } }
-  .hero-logo { width: clamp(9rem, 22vw, 13.5rem); height: auto; margin: 0 0 1.6rem -.4rem; filter: drop-shadow(0 0 1px rgba(255,255,255,.9)) drop-shadow(0 18px 40px rgba(0,0,0,.6)); }
-  .hero .u-h1 { font-size: clamp(2.5rem, 5.6vw, 4.6rem); margin-top: 1.3rem; }
+  .hero-logo { width: clamp(9rem, 22vw, 13.5rem + var(--u-wide) * .08); height: auto; margin: 0 0 1.6rem -.4rem; filter: drop-shadow(0 0 1px rgba(255,255,255,.9)) drop-shadow(0 18px 40px rgba(0,0,0,.6)); }
+  /* On a wide screen the hero's words are larger and its lines longer (--u-wide, in uplink.css). */
+  .hero .u-h1 { font-size: clamp(2.5rem, 5.6vw, 4.6rem + var(--u-wide) * .03); margin-top: 1.3rem; }
+  .hero .u-lede { font-size: clamp(1.05rem, 2.1vw, 1.2rem + var(--u-wide) * .006); max-width: calc(36rem + var(--u-wide) * .2); }
   .hero .note { margin: 1.2rem 0 0; font-size: .88rem; color: var(--u-ink-3); display: flex; gap: .6rem 1.2rem; flex-wrap: wrap; }
   .hero .note span { display: inline-flex; align-items: center; gap: .4rem; }
   .hero .note .u-i { width: 1rem; height: 1rem; color: var(--u-ink); }
@@ -97,7 +99,7 @@
   a.dl small:empty { display: none; }
 
   /* the phone: a foldable in 3D, the app on its screens lifted apart and drawn back in (site/mock/hero3d.css) */
-  .stage { position: relative; height: 40rem; }
+  .stage { position: relative; height: calc(40rem + var(--u-wide) * .25); }
   @media (max-width: 940px) { .stage { height: 34rem; margin-top: -1rem; } }
   .hero .u-wrap > div:first-child { position: relative; z-index: 2; }
 
@@ -109,13 +111,7 @@
   @media (max-width: 700px) { .head { padding-top: 4.25rem; } .head .u-slot--bg { height: 26rem; } }
   .after-head { padding-top: 3rem; padding-bottom: 6rem; }
 
-  /* the features: the deck of cards is site/mock/features.css; these are the small cards under it */
-  .features { margin-top: 2.6rem; }
-  .features .wide { grid-column: span 2; display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; align-items: stretch; padding: 0; overflow: hidden; }
-  .features .wide .txt { padding: 1.5rem 0 1.5rem 1.45rem; }
-  .features .wide .u-slot { margin: calc(var(--u-inset) + 6px); border-radius: var(--u-r-sm); min-height: 12rem; }
-  .features .wide .u-needle { left: 58%; height: 130%; opacity: .7; }
-  @media (max-width: 560px) { .features .wide { grid-column: auto; grid-template-columns: 1fr; } .features .wide .txt { padding: 1.5rem 1.45rem 0; } .features .wide .u-slot { min-height: 10rem; margin-top: 0; } }
+  /* the features: a deck of cards, each playing its own (site/mock/features.css) */
 
   /* calls: a panel of night sky */
   .calls { position: relative; margin: 0 var(--u-gutter); border-radius: var(--u-r-lg); border: 1px solid var(--u-rule); overflow: hidden; padding: 6rem 0; }
@@ -132,36 +128,7 @@
   .duo .u-needle { left: 50%; height: 115%; opacity: .5; }
   @media (max-width: 520px) { .duo { height: 30rem; } .duo > .gm { width: 11.5rem; } .duo > .a { left: 0; } .duo > .b { right: 0; } }
 
-  /* one inbox: other networks among the texts */
-  .nets { display: grid; grid-template-columns: .9fr 1.1fr; gap: 3rem; align-items: center; }
-  @media (max-width: 900px) { .nets { grid-template-columns: minmax(0, 1fr); gap: 2rem; } }
-  .netshots { position: relative; height: 32rem; }
-  .netshots > .gm { position: absolute; width: 17rem; border-radius: 1.8rem; box-shadow: 0 0 0 1px var(--u-rule), 0 30px 60px -20px rgba(0, 0, 0, .55); }
-  .netshots > .a { left: 0; top: 0; transform: rotate(-3deg); }
-  .netshots > .b { right: 0; bottom: 0; transform: rotate(3deg); }
-  @media (max-width: 520px) { .netshots { height: 26rem; } .netshots > .gm { width: 12.5rem; } }
-  .netcards { display: grid; gap: 1rem; }
-  .nethead { display: flex; align-items: center; gap: .9rem; margin-bottom: 1rem; }
-  .nethead .u-badge { margin: 0; }
-  .nethead .u-h3 { margin: 0; font-size: 1.4rem; }
-  .nethead .where { font-size: .82rem; color: var(--u-ink-3); font-weight: 600; }
-  .netcard ul { list-style: none; padding: 0; margin: 0 0 1rem; display: grid; gap: .5rem; }
-  .netcard li { display: flex; gap: .6rem; align-items: flex-start; color: var(--u-ink-2); font-size: .96rem; }
-  .netcard li .u-i { width: 1.05rem; height: 1.05rem; margin-top: .22rem; }
-  .netcard .how { margin: 0; font-size: .9rem; color: var(--u-ink-3); border-top: 1px solid var(--u-rule); padding-top: .9rem; }
-  .netcard .how b { color: var(--u-ink-2); }
-  .logos { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr)); gap: .75rem; }
-  .logos .logo { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .6rem; padding: 1.2rem .6rem 1rem; border: 1px solid var(--u-rule); border-radius: var(--u-r); background: color-mix(in srgb, var(--u-paper) 70%, transparent); text-align: center; transition: border-color .2s, transform .2s; }
-  .logos .logo:hover { border-color: var(--u-line); transform: translateY(-2px); }
-  .logos .mark { width: 2.1rem; height: 2.1rem; display: grid; place-items: center; color: var(--u-ink); }
-  .logos .mark svg { width: 100%; height: 100%; fill: currentColor; }
-  .logos .mark .u-i { fill: none; }
-  .logos .name { font-size: .86rem; font-weight: 600; color: var(--u-ink-2); line-height: 1.25; }
-  .logos .name small { display: block; font-size: .7rem; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--u-ink-3); margin-top: .15rem; }
-  .logos .soon { border-style: dashed; }
-  .logos .soon .mark { opacity: .45; }
-  @media (max-width: 520px) { .logos { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem; } .logos .logo { padding: .9rem .3rem .8rem; } .logos .mark { width: 1.7rem; height: 1.7rem; } .logos .name { font-size: .74rem; } }
-  .netrow { justify-content: center; margin-top: 3rem; }
+  /* one inbox: the flow is site/mock/inbox.css; these are the two paragraphs under it */
   .ext { font-size: .95rem; text-align: center; margin: 1.6rem auto 0; }
   .netnote { display: flex; gap: .6rem; align-items: flex-start; max-width: 46rem; margin: 1.2rem auto 0; color: var(--u-ink-3); font-size: .9rem; }
   .netnote .u-i { width: 1.1rem; height: 1.1rem; color: var(--u-ink-2); margin-top: .15rem; }
@@ -201,13 +168,9 @@
     <symbol id="i-msg" viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></symbol>
     <symbol id="i-msgs" viewBox="0 0 24 24"><path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/></symbol>
     <symbol id="i-heart" viewBox="0 0 24 24"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></symbol>
-    <symbol id="i-spark" viewBox="0 0 24 24"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/></symbol>
-    <symbol id="i-phones" viewBox="0 0 24 24"><path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/></symbol>
-    <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
     <symbol id="i-laptop" viewBox="0 0 24 24"><path d="M20 16V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9m16 0H4m16 0 1.28 2.55a1 1 0 0 1-.9 1.45H3.62a1 1 0 0 1-.9-1.45L4 16"/></symbol>
     <symbol id="i-lock" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
     <symbol id="i-key" viewBox="0 0 24 24"><path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"/><circle cx="16.5" cy="7.5" r=".5"/></symbol>
-    <symbol id="i-smile" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01"/><path d="M15 9h.01"/></symbol>
     <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
     <symbol id="i-phone" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></symbol>
     <symbol id="i-monitor" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></symbol>
@@ -223,9 +186,6 @@
     <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></symbol>
     <symbol id="i-userx" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="m17 8 5 5"/><path d="m22 8-5 5"/></symbol>
     <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>
-    <symbol id="i-filter" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M7 12h10"/><path d="M10 18h4"/></symbol>
-    <symbol id="i-hash" viewBox="0 0 24 24"><path d="M4 9h16"/><path d="M4 15h16"/><path d="M10 3 8 21"/><path d="M16 3l-2 18"/></symbol>
-    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></symbol>
     <symbol id="i-zap" viewBox="0 0 24 24"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></symbol>
     <symbol id="i-code" viewBox="0 0 24 24"><path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/></symbol>
     <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
@@ -238,7 +198,6 @@
     <symbol id="i-folder" viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></symbol>
     <symbol id="i-foldersync" viewBox="0 0 24 24"><path d="M9 20H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v.5"/><path d="M12 10v4h4"/><path d="m12 14 1.535-1.605a5 5 0 0 1 8 1.5"/><path d="M22 22v-4h-4"/><path d="m22 18-1.535 1.605a5 5 0 0 1-8-1.5"/></symbol>
     <symbol id="i-rec" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="1"/></symbol>
-    <symbol id="i-screen" viewBox="0 0 24 24"><path d="M13 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-3"/><path d="M8 21h8"/><path d="M12 17v4"/><path d="m17 8 5-5"/><path d="M17 3h5v5"/></symbol>
     <symbol id="i-film" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 3v18"/><path d="M3 7.5h4"/><path d="M3 12h18"/><path d="M3 16.5h4"/><path d="M17 3v18"/><path d="M17 7.5h4"/><path d="M17 16.5h4"/></symbol>
     <symbol id="i-captions" viewBox="0 0 24 24"><rect width="18" height="14" x="3" y="5" rx="2" ry="2"/><path d="M7 15h4"/><path d="M15 15h2"/><path d="M7 11h2"/><path d="M13 11h4"/></symbol>
     <symbol id="i-pause" viewBox="0 0 24 24"><rect x="14" y="4" width="4" height="16" rx="1"/><rect x="6" y="4" width="4" height="16" rx="1"/></symbol>
@@ -308,7 +267,7 @@
             <div class="h3-paper"><div class="gm-status gm-status--shown"><span>7:42</span><span class="gm-status__icons"><i></i></span></div></div>
 <!-- H3:cover -->
 <div class="gm h3-pane" data-screen="cover" data-view="thread" data-hero>
-  <div class="h3-l" data-name="header" data-z="2.2" style="left:0px;top:62px;width:412px"><div class="gm gm-fit gm-clear" data-mock="x-header"><div class="gm-stage">
+  <div class="h3-l" data-name="header" data-z="2.2" data-plate style="left:0px;top:62px;width:412px"><div class="gm gm-fit gm-clear" data-mock="x-header"><div class="gm-stage">
   <header class="gm-head">
     <button class="gm-iconbtn" tabindex="-1" aria-label="Back"><svg class="gm-i"><use href="/mock/icons.svg#arrow-left"/></svg></button>
     <button class="gm-head__who" tabindex="-1">
@@ -321,26 +280,29 @@
     </span>
   </header>
 </div></div></div>
-  <div class="h3-l" data-name="yours" data-z="1.5" style="left:82px;top:134px;width:321px"><div class="gm gm-fit gm-clear" data-mock="x-out1"><div class="gm-stage">
+  <div class="h3-l" data-name="yours" data-z="1.4" style="left:82px;top:130px;width:321px"><div class="gm gm-fit gm-clear" data-mock="x-out1"><div class="gm-stage">
   <div class="gm-msg gm-msg--out" data-g="top"><div class="gm-bubble">Movie night is still on for tonight right?</div></div>
 </div></div></div>
-  <div class="h3-l" data-name="yours-last" data-z="1.5" style="left:212px;top:201px;width:191px"><div class="gm gm-fit gm-clear" data-mock="x-out2"><div class="gm-stage">
+  <div class="h3-l" data-name="yours-last" data-z="1.4" style="left:212px;top:197px;width:191px"><div class="gm gm-fit gm-clear" data-mock="x-out1b"><div class="gm-stage">
   <div class="gm-msg gm-msg--out" data-g="bottom"><div class="gm-bubble">Dinner at mine first?</div></div>
 </div></div></div>
-  <div class="h3-l" data-name="heart" data-z="1.9" style="left:222px;top:241px;width:30px"><div class="gm gm-fit gm-clear" data-mock="x-heart"><div class="gm-stage">
-  <span class="gm-react">❤️</span>
-</div></div></div>
-  <div class="h3-l" data-name="receipt" data-z="1.15" style="left:260px;top:267px;width:140px"><div class="gm gm-fit gm-clear" data-mock="x-ticks"><div class="gm-stage">
-  <div class="gm-msg gm-msg--out"><div class="gm-meta"><span class="gm-meta__lines"><span class="hero-edited">Edited · correction sent</span><span class="gm-row-flex"><span class="hero-state">Delivered · 11:27 PM</span>&nbsp;<svg class="gm-i gm-ticks"><use href="/mock/icons.svg#check-check"/></svg></span></span></div></div>
-</div></div></div>
-  <div class="h3-l" data-name="theirs" data-z="1.3" style="left:10px;top:305px;width:322px"><div class="gm gm-fit gm-clear" data-mock="x-in"><div class="gm-stage">
+  <div class="h3-l" data-name="theirs" data-z="1.2" style="left:10px;top:254px;width:322px"><div class="gm gm-fit gm-clear" data-mock="x-in"><div class="gm-stage">
   <div class="gm-msg gm-msg--in" data-g="solo"><div class="gm-bubble">Sounds good, see you at 7! Bring the projector cable if you still have it</div></div>
 </div></div></div>
-  <div class="h3-l" data-name="laugh" data-z="1.75" style="left:291px;top:373px;width:31px"><div class="gm gm-fit gm-clear" data-mock="x-laugh"><div class="gm-stage">
-  <span class="gm-react">😂</span>
+  <div class="h3-l" data-name="laugh" data-z="1.7" style="left:291px;top:322px;width:31px"><div class="gm gm-fit gm-clear" data-mock="x-laugh"><div class="gm-stage">
+  <span class="gm-react is-gone">😂</span>
 </div></div></div>
-  <div class="h3-l" data-name="emoji" data-z="1.0" style="left:17px;top:411px;width:99px"><div class="gm gm-fit gm-clear" data-mock="x-emoji"><div class="gm-stage">
-  <div class="gm-msg gm-msg--in" data-g="solo"><div class="gm-jumbo"><span>🎉</span><span>🍿</span></div></div>
+  <div class="h3-l" data-name="reply" data-z="1.6" style="left:212px;top:354px;width:191px"><div class="gm gm-fit gm-clear" data-mock="x-out2"><div class="gm-stage">
+  <div class="gm-msg gm-msg--out is-away" data-g="solo"><div class="gm-bubble"></div></div>
+</div></div></div>
+  <div class="h3-l" data-name="heart" data-z="2.0" style="left:248px;top:394px;width:30px"><div class="gm gm-fit gm-clear" data-mock="x-heart"><div class="gm-stage">
+  <span class="gm-react is-gone">❤️</span>
+</div></div></div>
+  <div class="h3-l" data-name="receipt" data-z="1.15" style="left:260px;top:420px;width:140px"><div class="gm gm-fit gm-clear" data-mock="x-ticks"><div class="gm-stage">
+  <div class="gm-msg gm-msg--out"><div class="gm-meta is-away"><span class="gm-meta__lines"><span class="gm-row-flex"><span class="hero-state">Sent · now</span>&nbsp;<svg class="gm-i gm-ticks"><use href="/mock/icons.svg#check"/></svg></span></span></div></div>
+</div></div></div>
+  <div class="h3-l" data-name="emoji" data-z="1.0" style="left:17px;top:448px;width:99px"><div class="gm gm-fit gm-clear" data-mock="x-emoji"><div class="gm-stage">
+  <div class="gm-msg gm-msg--in is-away" data-g="solo"><div class="gm-jumbo"><span>🎉</span><span>🍿</span></div></div>
 </div></div></div>
   <div class="h3-l" data-name="replies" data-z="0.8" style="left:10px;top:478px;width:248px"><div class="gm gm-fit gm-clear" data-mock="x-chips"><div class="gm-stage">
   <div class="gm-chips"><button class="gm-chip gm-chip--emoji" tabindex="-1">👍</button><button class="gm-chip" tabindex="-1">Sounds good</button><button class="gm-chip" tabindex="-1">Haha</button></div>
@@ -646,32 +608,25 @@
           </div>
         </article>
 
-        <article class="u-sticker ft-card" data-ft="share">
-          <h3 class="u-h3 ft-name"><span class="u-badge"><svg class="u-i"><use href="#i-screen"/></svg></span><span class="ft-title">Screen sharing</span><span class="ft-num" aria-hidden="true">04</span></h3>
-          <div class="ft-body" id="ft-share">
-            <p class="ft-say">Show the call a whole screen or just one window, with its sound on a Mac or PC. Everyone sees it large and whole, never cropped.</p>
-            <div class="ft-meta"><ol class="ft-steps"><li>Pick a window</li><li>Everyone sees it</li><li>Its sound goes too</li></ol></div>
-            <div class="gm gm-fit ft-stage" data-mock="ft-share" aria-hidden="true" inert>
-              <div class="gm-stage"><div class="gm-screen fh" data-view="live">
-                <div class="fh-pick">
-                  <div class="fd-bar fd-bar--plain"><span class="fd-bar__text"><b>Share your screen</b></span><span class="fd-fill"></span><span class="fd-ico fd-ico--muted"><svg class="gm-i"><use href="/mock/icons.svg#x"/></svg></span></div>
-                  <div class="fh-soundrow" data-hue="blue"><span class="gm-tile"><svg class="gm-i"><use href="/mock/icons.svg#volume-2"/></svg></span><span class="fh-soundrow__text"><b>Share sound too</b><small>What your computer plays goes with your screen.</small></span><span class="gm-toggle" role="presentation" aria-checked="true"></span></div>
-                  <div class="fh-choices">
-                    <div class="fh-thumb"><small>Screens</small><div class="fh-pic fh-pic--desk"><i></i><i></i><i></i></div><b>Entire screen</b></div>
-                    <div class="fh-thumb js-window"><small>Windows</small><div class="fh-pic fh-pic--plan"><i></i><i></i><i></i><svg viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M8 90C30 82 22 54 46 50S70 26 92 10"/></svg></div><b>Trip plan</b></div>
-                    <div class="fh-thumb"><small>&nbsp;</small><div class="fh-pic fh-pic--notes"><i></i><i></i><i></i><i></i><i></i></div><b>Notes</b></div>
-                  </div>
+        <article class="u-sticker ft-card" data-ft="plugins">
+          <h3 class="u-h3 ft-name"><span class="u-badge"><svg class="u-i"><use href="#i-puzzle"/></svg></span><span class="ft-title">Plugins</span><span class="ft-num" aria-hidden="true">04</span></h3>
+          <div class="ft-body" id="ft-plugins">
+            <p class="ft-say">The Marketplace adds what you want and nothing you don't: translation, a spam filter, call recording. Anyone can write a plugin, and each is reviewed.</p>
+            <div class="ft-meta"><ol class="ft-steps"><li>Open the Marketplace</li><li>Add one in a tap</li><li>It goes to work</li></ol></div>
+            <div class="gm gm-fit ft-stage" data-mock="ft-plugins" aria-hidden="true" inert>
+              <div class="gm-stage"><div class="gm-screen fp">
+                <div class="fd-bar"><span class="fd-ico"><svg class="gm-i"><use href="/mock/icons.svg#arrow-left"/></svg></span><span class="fd-bar__text"><b>Discover</b><small>Marketplace</small></span><span class="fd-fill"></span><span class="fp-count">31 plugins · <b class="js-added">10</b> added</span></div>
+                <div class="fp-chips"><span class="gm-chip" aria-pressed="true">All</span><span class="gm-chip">Added<i class="js-added">10</i></span><span class="gm-chip">For circles</span><span class="gm-chip">Organise</span></div>
+                <div class="fp-grid">
+                  <div class="fp-plug js-translate is-added" data-hue="blue"><span class="gm-tile"><svg class="gm-i"><use href="/mock/icons.svg#languages"/></svg></span><span class="fp-plug__text"><b>Translate</b><small>Read texts in other languages</small></span><span class="fp-act"><svg class="gm-i"><use href="/mock/icons.svg#circle-check"/></svg>Added</span></div>
+                  <div class="fp-plug is-added" data-hue="green"><span class="gm-tile"><svg class="gm-i"><use href="/mock/icons.svg#key-round"/></svg></span><span class="fp-plug__text"><b>Codes</b><small>Sign-in codes in a tab of their own</small></span><span class="fp-act"><svg class="gm-i"><use href="/mock/icons.svg#circle-check"/></svg>Added</span></div>
+                  <div class="fp-plug" data-hue="coral"><span class="gm-tile"><svg class="gm-i"><use href="/mock/icons.svg#circle-dot"/></svg></span><span class="fp-plug__text"><b>Record call</b><small>A named track for each voice</small></span><span class="fp-act">Add</span></div>
+                  <div class="fp-plug is-added" data-hue="red"><span class="gm-tile"><svg class="gm-i"><use href="/mock/icons.svg#triangle-alert"/></svg></span><span class="fp-plug__text"><b>Spam filter</b><small>Spam in a tab of its own</small></span><span class="fp-act"><svg class="gm-i"><use href="/mock/icons.svg#circle-check"/></svg>Added</span></div>
                 </div>
-                <div class="fh-live">
-                  <div class="fd-line"><i class="fh-on"></i><span class="fd-line__text"><b>You're sharing your screen</b> · Trip plan</span><span class="fd-line__act">Stop</span></div>
-                  <div class="fh-win">
-                    <div class="fh-win__bar"><i></i><i></i><i></i><span>Trip plan</span></div>
-                    <div class="fh-slide">
-                      <div class="fh-slide__text"><b>Coast road, day two</b><span>Leave by nine</span><span>Lunch at the harbour</span><span>Camp before dark</span></div>
-                      <svg class="fh-route" viewBox="0 0 120 100" preserveAspectRatio="xMidYMid meet"><path pathLength="100" d="M10 88C34 84 30 60 52 56S74 34 82 26S100 16 110 12"/><circle cx="10" cy="88" r="4"/><circle cx="110" cy="12" r="4"/></svg>
-                    </div>
-                  </div>
-                  <div class="fh-under"><span class="fh-watch"><span class="gm-av is-in" data-hue="magenta">M</span><span class="gm-av is-in" data-hue="amber">J</span><span class="gm-av is-in" data-hue="blue">S</span></span><span class="js-watching">Maya, Jo and Sam <i>are watching</i></span><span class="fd-fill"></span><span class="fh-sound is-on"><svg class="gm-i"><use href="/mock/icons.svg#volume-2"/></svg><span class="fh-bars"><i></i><i></i><i></i><i></i></span><b>Sound on</b></span></div>
+                <div class="fp-peek is-on is-translated">
+                  <div class="fp-peek__head"><span class="gm-av" data-hue="rose">L</span><b>Lucía</b><span class="fd-fill"></span><span class="fp-peek__tag"><svg class="gm-i"><use href="/mock/icons.svg#languages"/></svg>Translated on this phone</span></div>
+                  <div class="fp-peek__was">¿Nos vemos mañana a las ocho?</div>
+                  <div class="gm-msg gm-msg--in" data-g="solo"><div class="gm-bubble js-said">See you tomorrow at eight?</div></div>
                 </div>
                 <i class="fd-tap"></i>
               </div></div>
@@ -754,19 +709,6 @@
         <span class="ft-hint">Plays by itself. Choose a card to jump to it.</span>
         <button class="u-icon-btn ft-play" type="button" aria-pressed="false" aria-label="Pause the walkthroughs"><svg class="u-i i-pause"><use href="#i-pause"/></svg><svg class="u-i i-play"><use href="#i-play"/></svg></button>
       </div>
-    </div>
-    <div class="u-grid features">
-      <div class="u-sticker"><span class="u-badge"><svg class="u-i"><use href="#i-heart"/></svg></span><h3 class="u-h3">Reactions that land</h3><p>A ❤️ from an iPhone or a Pixel sits on the message it was for, not in a line of its own.</p></div>
-      <div class="u-sticker wide">
-        <div class="txt"><span class="u-badge"><svg class="u-i"><use href="#i-spark"/></svg></span><h3 class="u-h3">Effects</h3><p>Balloons for "Happy birthday", confetti for "Congrats", lasers for "pew pew".</p></div>
-        <div class="u-slot u-stars u-night" aria-hidden="true"><img class="u-slot-img" src="/art/space/effects.webp" alt="" loading="lazy" onerror="this.remove()"><i class="u-needle u-needle--glow"></i></div>
-      </div>
-      <div class="u-sticker"><span class="u-badge"><svg class="u-i"><use href="#i-users"/></svg></span><h3 class="u-h3">Friends by username</h3><p>Pick a username, add friends by theirs, and make groups you can call all at once.</p></div>
-      <div class="u-sticker"><span class="u-badge"><svg class="u-i"><use href="#i-hash"/></svg></span><h3 class="u-h3">Codes, sorted</h3><p>One-time codes get their own tab with the company's logo, ready to copy.</p></div>
-      <div class="u-sticker"><span class="u-badge"><svg class="u-i"><use href="#i-filter"/></svg></span><h3 class="u-h3">Sorted for you</h3><p>Sales and spam each find their own tab, and codes theirs, so the people you talk to come first.</p></div>
-      <div class="u-sticker"><span class="u-badge"><svg class="u-i"><use href="#i-smile"/></svg></span><h3 class="u-h3">Your emoji</h3><p>The phone's own, Noto, Twemoji, OpenMoji or a clean outline set. Stickers too.</p></div>
-      <div class="u-sticker"><span class="u-badge"><svg class="u-i"><use href="#i-check2"/></svg></span><h3 class="u-h3">Ticks</h3><p>Sent, delivered and read. Pictures retry by themselves and tell you why.</p></div>
-      <div class="u-sticker"><span class="u-badge"><svg class="u-i"><use href="#i-refresh"/></svg></span><h3 class="u-h3">Keeps itself current</h3><p>Small updates, often, on every device. No store needed.</p></div>
     </div>
   </div>
 </section>
@@ -902,112 +844,110 @@
     </div>
   </div>
   <div class="u-wrap after-head">
-    <div class="nets">
-      <div class="netshots" aria-hidden="true">
-        <div class="gm gm-fit a" data-mock="inbox-list" style="--w:412;--h:585" aria-hidden="true">
-  <div class="gm-stage">
-    <div class="gm-screen">
-      <div class="gm-titlebar">
-        <h1 class="gm-titlebar__title">Messages</h1>
-        <button class="gm-iconbtn gm-iconbtn--muted" tabindex="-1" aria-label="Clean up"><svg class="gm-i"><use href="/mock/icons.svg#brush-cleaning"/></svg></button>
-        <button class="gm-roundbtn ib-readall" tabindex="-1" aria-label="Mark all read"><svg class="gm-i"><use href="/mock/icons.svg#check-check"/></svg></button>
-        <button class="gm-iconbtn" tabindex="-1" aria-label="New message"><svg class="gm-i"><use href="/mock/icons.svg#message-square-plus"/></svg></button>
-        <button class="gm-iconbtn" tabindex="-1" aria-label="Settings"><svg class="gm-i"><use href="/mock/icons.svg#settings"/></svg></button>
-      </div>
-      <label class="gm-search"><svg class="gm-i"><use href="/mock/icons.svg#search"/></svg><input tabindex="-1" placeholder="Search messages" aria-label="Search messages"></label>
-      <div class="gm-row-flex ib-tabsrow">
-        <div class="gm-seg" data-gm-tabs style="flex:1">
-          <span class="gm-seg__thumb"></span>
-          <button class="gm-seg__tab" tabindex="-1" aria-selected="true" aria-label="Chats"><svg class="gm-i"><use href="/mock/icons.svg#message-circle"/></svg></button>
-          <button class="gm-seg__tab" tabindex="-1" aria-label="Spaces"><svg class="gm-i"><use href="/mock/icons.svg#headphones"/></svg></button>
+    <!-- One inbox, drawn as a flow (site/mock/inbox.css and inbox.js): every network at the left in its own colour,
+         the ones linked in the app and the ones signed in to once in Chrome (the Uplink keys extension), and a wire
+         from each to a computer's window and a phone that show the same list. The script draws the wires and plays
+         it through; the markup is the still picture. -->
+    <div class="fl" data-flow>
+      <svg class="fl-marks" width="0" height="0" aria-hidden="true"><defs>
+        <symbol id="n-texts" viewBox="0 0 24 24"><path d="M5 3h14a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3H9.6l-4.9 3.9A1 1 0 0 1 3 21.1V18.6A3 3 0 0 1 2 16.4V6a3 3 0 0 1 3-3Z"/></symbol>
+        <symbol id="n-rcs" viewBox="0 0 24 24"><path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12a12 12 0 0 0 12-12A12 12 0 0 0 12 0M4.911 7.089h11.456a2.197 2.197 0 0 1 2.165 2.19v5.863a2.213 2.213 0 0 1-2.177 2.178H8.04c-1.174 0-2.04-.99-2.04-2.178v-4.639L4.503 7.905c-.31-.42-.05-.816.408-.816m3.415 2.19c-.347 0-.68.21-.68.544s.333.544.68.544h7.905c.346 0 .68-.21.68-.544s-.334-.545-.68-.545zm0 2.177c-.347 0-.68.21-.68.544s.333.544.68.544h7.905c.346 0 .68-.21.68-.544s-.334-.544-.68-.544zm-.013 2.19c-.346 0-.68.21-.68.544s.334.544.68.544h5.728c.347 0 .68-.21.68-.544s-.333-.545-.68-.545z"/></symbol>
+        <symbol id="n-whatsapp" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967c-.273-.099-.471-.148-.67.15c-.197.297-.767.966-.94 1.164c-.173.199-.347.223-.644.075c-.297-.15-1.255-.463-2.39-1.475c-.883-.788-1.48-1.761-1.653-2.059c-.173-.297-.018-.458.13-.606c.134-.133.298-.347.446-.52s.198-.298.298-.497c.099-.198.05-.371-.025-.52s-.669-1.612-.916-2.207c-.242-.579-.487-.5-.669-.51a13 13 0 0 0-.57-.01c-.198 0-.52.074-.792.372c-.272.297-1.04 1.016-1.04 2.479c0 1.462 1.065 2.875 1.213 3.074s2.096 3.2 5.077 4.487c.709.306 1.262.489 1.694.625c.712.227 1.36.195 1.871.118c.571-.085 1.758-.719 2.006-1.413s.248-1.289.173-1.413c-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214l-3.741.982l.998-3.648l-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884c2.64 0 5.122 1.03 6.988 2.898a9.82 9.82 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.82 11.82 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.9 11.9 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.82 11.82 0 0 0-3.48-8.413"/></symbol>
+        <symbol id="n-telegram" viewBox="0 0 24 24"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12a12 12 0 0 0 12-12A12 12 0 0 0 12 0zm4.962 7.224c.1-.002.321.023.465.14a.5.5 0 0 1 .171.325c.016.093.036.306.02.472c-.18 1.898-.962 6.502-1.36 8.627c-.168.9-.499 1.201-.82 1.23c-.696.065-1.225-.46-1.9-.902c-1.056-.693-1.653-1.124-2.678-1.8c-1.185-.78-.417-1.21.258-1.91c.177-.184 3.247-2.977 3.307-3.23c.007-.032.014-.15-.056-.212s-.174-.041-.249-.024q-.159.037-5.061 3.345q-.72.495-1.302.48c-.428-.008-1.252-.241-1.865-.44c-.752-.245-1.349-.374-1.297-.789q.04-.324.893-.663q5.247-2.286 6.998-3.014c3.332-1.386 4.025-1.627 4.476-1.635"/></symbol>
+        <symbol id="n-signal" viewBox="0 0 24 24"><path d="M12 0q-.934 0-1.83.139l.17 1.111a11 11 0 0 1 3.32 0l.172-1.111A12 12 0 0 0 12 0M9.152.34A12 12 0 0 0 5.77 1.742l.584.961a10.8 10.8 0 0 1 3.066-1.27zm5.696 0l-.268 1.094a10.8 10.8 0 0 1 3.066 1.27l.584-.962A12 12 0 0 0 14.848.34M12 2.25a9.75 9.75 0 0 0-8.539 14.459c.074.134.1.292.064.441l-1.013 4.338l4.338-1.013a.62.62 0 0 1 .441.064A9.7 9.7 0 0 0 12 21.75c5.385 0 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25m-7.092.068a12 12 0 0 0-2.59 2.59l.909.664a11 11 0 0 1 2.345-2.345zm14.184 0l-.664.909a11 11 0 0 1 2.345 2.345l.909-.664a12 12 0 0 0-2.59-2.59M1.742 5.77A12 12 0 0 0 .34 9.152l1.094.268a10.8 10.8 0 0 1 1.269-3.066zm20.516 0l-.961.584a10.8 10.8 0 0 1 1.27 3.066l1.093-.268a12 12 0 0 0-1.402-3.383M.138 10.168A12 12 0 0 0 0 12q0 .934.139 1.83l1.111-.17A11 11 0 0 1 1.125 12q0-.848.125-1.66zm23.723.002l-1.111.17q.125.812.125 1.66c0 .848-.042 1.12-.125 1.66l1.111.172a12.1 12.1 0 0 0 0-3.662M1.434 14.58l-1.094.268a12 12 0 0 0 .96 2.591l-.265 1.14l1.096.255l.36-1.539l-.188-.365a10.8 10.8 0 0 1-.87-2.35m21.133 0a10.8 10.8 0 0 1-1.27 3.067l.962.584a12 12 0 0 0 1.402-3.383zm-1.793 3.848a11 11 0 0 1-2.345 2.345l.664.909a12 12 0 0 0 2.59-2.59zm-19.959 1.1L.357 21.48a1.8 1.8 0 0 0 2.162 2.161l1.954-.455l-.256-1.095l-1.953.455a.675.675 0 0 1-.81-.81l.454-1.954zm16.832 1.769a10.8 10.8 0 0 1-3.066 1.27l.268 1.093a12 12 0 0 0 3.382-1.402zm-10.94.213l-1.54.36l.256 1.095l1.139-.266c.814.415 1.683.74 2.591.961l.268-1.094a10.8 10.8 0 0 1-2.35-.869zm3.634 1.24l-.172 1.111a12.1 12.1 0 0 0 3.662 0l-.17-1.111q-.812.125-1.66.125a11 11 0 0 1-1.66-.125"/></symbol>
+        <symbol id="n-discord" viewBox="0 0 24 24"><path d="M20.317 4.37a19.8 19.8 0 0 0-4.885-1.515a.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.3 18.3 0 0 0-5.487 0a13 13 0 0 0-.617-1.25a.08.08 0 0 0-.079-.037A19.7 19.7 0 0 0 3.677 4.37a.1.1 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.08.08 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03a.08.08 0 0 0 .084-.028a14 14 0 0 0 1.226-1.994a.076.076 0 0 0-.041-.106a13 13 0 0 1-1.872-.892a.077.077 0 0 1-.008-.128a10 10 0 0 0 .372-.292a.07.07 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.07.07 0 0 1 .078.01q.181.149.373.292a.077.077 0 0 1-.006.127a12.3 12.3 0 0 1-1.873.892a.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.08.08 0 0 0 .084.028a19.8 19.8 0 0 0 6.002-3.03a.08.08 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.06.06 0 0 0-.031-.03M8.02 15.33c-1.182 0-2.157-1.085-2.157-2.419c0-1.333.956-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.956 2.418-2.157 2.418m7.975 0c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.955-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.946 2.418-2.157 2.418"/></symbol>
+        <symbol id="n-messenger" viewBox="0 0 24 24"><path d="M12 0C5.24 0 0 4.952 0 11.64c0 3.499 1.434 6.521 3.769 8.61a.96.96 0 0 1 .323.683l.065 2.135a.96.96 0 0 0 1.347.85l2.381-1.053a.96.96 0 0 1 .641-.046A13 13 0 0 0 12 23.28c6.76 0 12-4.952 12-11.64S18.76 0 12 0m6.806 7.44c.522-.03.971.567.63 1.094l-4.178 6.457a.707.707 0 0 1-.977.208l-3.87-2.504a.44.44 0 0 0-.49.007l-4.363 3.01c-.637.438-1.415-.317-.995-.966l4.179-6.457a.706.706 0 0 1 .977-.21l3.87 2.505c.15.097.344.094.491-.007l4.362-3.008a.7.7 0 0 1 .364-.13"/></symbol>
+        <symbol id="n-instagram" viewBox="0 0 24 24"><path d="M7.03.084c-1.277.06-2.149.264-2.91.563a5.9 5.9 0 0 0-2.124 1.388a5.9 5.9 0 0 0-1.38 2.127C.321 4.926.12 5.8.064 7.076s-.069 1.688-.063 4.947s.021 3.667.083 4.947c.061 1.277.264 2.149.563 2.911c.308.789.72 1.457 1.388 2.123a5.9 5.9 0 0 0 2.129 1.38c.763.295 1.636.496 2.913.552c1.278.056 1.689.069 4.947.063s3.668-.021 4.947-.082c1.28-.06 2.147-.265 2.91-.563a5.9 5.9 0 0 0 2.123-1.388a5.9 5.9 0 0 0 1.38-2.129c.295-.763.496-1.636.551-2.912c.056-1.28.07-1.69.063-4.948c-.006-3.258-.02-3.667-.081-4.947c-.06-1.28-.264-2.148-.564-2.911a5.9 5.9 0 0 0-1.387-2.123a5.9 5.9 0 0 0-2.128-1.38c-.764-.294-1.636-.496-2.914-.55C15.647.009 15.236-.006 11.977 0S8.31.021 7.03.084m.14 21.693c-1.17-.05-1.805-.245-2.228-.408a3.7 3.7 0 0 1-1.382-.895a3.7 3.7 0 0 1-.9-1.378c-.165-.423-.363-1.058-.417-2.228c-.06-1.264-.072-1.644-.08-4.848c-.006-3.204.006-3.583.061-4.848c.05-1.169.246-1.805.408-2.228c.216-.561.477-.96.895-1.382a3.7 3.7 0 0 1 1.379-.9c.423-.165 1.057-.361 2.227-.417c1.265-.06 1.644-.072 4.848-.08c3.203-.006 3.583.006 4.85.062c1.168.05 1.804.244 2.227.408c.56.216.96.475 1.382.895s.681.817.9 1.378c.165.422.362 1.056.417 2.227c.06 1.265.074 1.645.08 4.848c.005 3.203-.006 3.583-.061 4.848c-.051 1.17-.245 1.805-.408 2.23c-.216.56-.477.96-.896 1.38a3.7 3.7 0 0 1-1.378.9c-.422.165-1.058.362-2.226.418c-1.266.06-1.645.072-4.85.079s-3.582-.006-4.848-.06m9.783-16.192a1.44 1.44 0 1 0 1.437-1.442a1.44 1.44 0 0 0-1.437 1.442M5.839 12.012a6.161 6.161 0 1 0 12.323-.024a6.162 6.162 0 0 0-12.323.024M8 12.008A4 4 0 1 1 12.008 16A4 4 0 0 1 8 12.008"/></symbol>
+        <symbol id="n-slack" viewBox="0 0 24 24"><path d="M5.042 15.165a2.53 2.53 0 0 1-2.52 2.523A2.53 2.53 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52zm1.271 0a2.527 2.527 0 0 1 2.521-2.52a2.527 2.527 0 0 1 2.521 2.52v6.313A2.53 2.53 0 0 1 8.834 24a2.53 2.53 0 0 1-2.521-2.522zM8.834 5.042a2.53 2.53 0 0 1-2.521-2.52A2.53 2.53 0 0 1 8.834 0a2.53 2.53 0 0 1 2.521 2.522v2.52zm0 1.271a2.53 2.53 0 0 1 2.521 2.521a2.53 2.53 0 0 1-2.521 2.521H2.522A2.53 2.53 0 0 1 0 8.834a2.53 2.53 0 0 1 2.522-2.521zm10.122 2.521a2.53 2.53 0 0 1 2.522-2.521A2.53 2.53 0 0 1 24 8.834a2.53 2.53 0 0 1-2.522 2.521h-2.522zm-1.268 0a2.53 2.53 0 0 1-2.523 2.521a2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.53 2.53 0 0 1 2.523 2.522zm-2.523 10.122a2.53 2.53 0 0 1 2.523 2.522A2.53 2.53 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522zm0-1.268a2.527 2.527 0 0 1-2.52-2.523a2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.53 2.53 0 0 1-2.522 2.523z"/></symbol>
+        <symbol id="n-x" viewBox="0 0 24 24"><path d="M14.234 10.162L22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.168 13.343L.258 24H2.33l8.016-9.318L16.749 24h6.993zm-2.837 3.299l-.929-1.329L3.076 1.56h3.182l5.965 8.532l.929 1.329l7.754 11.09h-3.182z"/></symbol>
+        <symbol id="n-matrix" viewBox="0 0 24 24"><path d="M.632.55v22.9H2.28V24H0V0h2.28v.55zm7.043 7.26v1.157h.033a3.3 3.3 0 0 1 1.117-1.024c.433-.245.936-.365 1.5-.365q.81.002 1.481.314c.448.208.785.582 1.02 1.108q.382-.562 1.034-.992q.651-.43 1.546-.43q.679 0 1.26.167c.388.11.716.286.993.53c.276.245.489.559.646.951q.229.587.23 1.417v5.728h-2.349V11.52q0-.43-.032-.812a1.8 1.8 0 0 0-.18-.66a1.1 1.1 0 0 0-.438-.448q-.292-.165-.785-.166q-.498 0-.803.189a1.4 1.4 0 0 0-.48.499a2 2 0 0 0-.231.696a6 6 0 0 0-.06.785v4.768h-2.35v-4.8q.002-.38-.018-.752a2.1 2.1 0 0 0-.143-.688a1.05 1.05 0 0 0-.415-.503c-.194-.125-.476-.19-.854-.19q-.168 0-.439.074c-.18.051-.36.143-.53.282a1.64 1.64 0 0 0-.439.595q-.18.39-.18 1.02v4.966H5.46V7.81zm15.693 15.64V.55H21.72V0H24v24h-2.28v-.55z"/></symbol>
+        <symbol id="n-teams" viewBox="0 0 24 24"><path d="M20.625 8.127q-.55 0-1.025-.205t-.832-.563t-.563-.832T18 5.502q0-.54.205-1.02t.563-.837q.357-.358.832-.563q.474-.205 1.025-.205q.54 0 1.02.205t.837.563q.358.357.563.837t.205 1.02q0 .55-.205 1.025t-.563.832q-.357.358-.837.563t-1.02.205m0-3.75q-.469 0-.797.328t-.328.797t.328.797t.797.328t.797-.328t.328-.797t-.328-.797t-.797-.328M24 10.002v5.578q0 .774-.293 1.46t-.803 1.194q-.51.51-1.195.803q-.686.293-1.459.293q-.445 0-.908-.105q-.463-.106-.85-.329q-.293.95-.855 1.729t-1.319 1.336t-1.67.861t-1.898.305q-1.148 0-2.162-.398q-1.014-.399-1.805-1.102t-1.312-1.664t-.674-2.086h-5.8q-.411 0-.704-.293T0 16.881V6.873q0-.41.293-.703t.703-.293h8.59q-.34-.715-.34-1.5q0-.727.275-1.365q.276-.639.75-1.114q.475-.474 1.114-.75q.638-.275 1.365-.275t1.365.275t1.114.75q.474.475.75 1.114q.275.638.275 1.365t-.275 1.365q-.276.639-.75 1.113q-.475.475-1.114.75q-.638.276-1.365.276q-.188 0-.375-.024q-.188-.023-.375-.058v1.078h10.875q.469 0 .797.328t.328.797M12.75 2.373q-.41 0-.78.158q-.368.158-.638.434q-.27.275-.428.639q-.158.363-.158.773t.158.78q.159.368.428.638q.27.27.639.428t.779.158t.773-.158q.364-.159.64-.428q.274-.27.433-.639t.158-.779t-.158-.773q-.159-.364-.434-.64q-.275-.275-.639-.433q-.363-.158-.773-.158M6.937 9.814h2.25V7.94H2.814v1.875h2.25v6h1.875zm10.313 7.313v-6.75H12v6.504q0 .41-.293.703t-.703.293H8.309q.152.809.556 1.5q.405.691.985 1.19q.58.497 1.318.779q.738.281 1.582.281q.926 0 1.746-.352q.82-.351 1.436-.966q.615-.616.966-1.43q.352-.815.352-1.752m5.25-1.547v-5.203h-3.75v6.855q.305.305.691.452q.387.146.809.146q.469 0 .879-.176q.41-.175.715-.48q.304-.305.48-.715t.176-.879"/></symbol>
+        <symbol id="n-gchat" viewBox="0 0 24 24"><path d="M1.637 0C.733 0 0 .733 0 1.637v16.5c0 .904.733 1.636 1.637 1.636h3.955v3.323c0 .804.97 1.207 1.539.638l3.963-3.96h11.27c.903 0 1.636-.733 1.636-1.637V5.592L18.408 0Zm3.955 5.592h12.816v8.59H8.455l-2.863 2.863Z"/></symbol>
+        <symbol id="n-bluesky" viewBox="0 0 24 24"><path d="M5.202 2.857C7.954 4.922 10.913 9.11 12 11.358c1.087-2.247 4.046-6.436 6.798-8.501C20.783 1.366 24 .213 24 3.883c0 .732-.42 6.156-.667 7.037c-.856 3.061-3.978 3.842-6.755 3.37c4.854.826 6.089 3.562 3.422 6.299c-5.065 5.196-7.28-1.304-7.847-2.97c-.104-.305-.152-.448-.153-.327c0-.121-.05.022-.153.327c-.568 1.666-2.782 8.166-7.847 2.97c-2.667-2.737-1.432-5.473 3.422-6.3c-2.777.473-5.899-.308-6.755-3.369C.42 10.04 0 4.615 0 3.883c0-3.67 3.217-2.517 5.202-1.026"/></symbol>
+        <symbol id="n-mastodon" viewBox="0 0 24 24"><path d="M23.268 5.313c-.35-2.578-2.617-4.61-5.304-5.004C17.51.242 15.792 0 11.813 0h-.03c-3.98 0-4.835.242-5.288.309C3.882.692 1.496 2.518.917 5.127C.64 6.412.61 7.837.661 9.143c.074 1.874.088 3.745.26 5.611c.118 1.24.325 2.47.62 3.68c.55 2.237 2.777 4.098 4.96 4.857c2.336.792 4.849.923 7.256.38q.398-.092.786-.213c.585-.184 1.27-.39 1.774-.753a.06.06 0 0 0 .023-.043v-1.809a.05.05 0 0 0-.02-.041a.05.05 0 0 0-.046-.01a20.3 20.3 0 0 1-4.709.545c-2.73 0-3.463-1.284-3.674-1.818a5.6 5.6 0 0 1-.319-1.433a.053.053 0 0 1 .066-.054c1.517.363 3.072.546 4.632.546c.376 0 .75 0 1.125-.01c1.57-.044 3.224-.124 4.768-.422q.059-.011.11-.024c2.435-.464 4.753-1.92 4.989-5.604c.008-.145.03-1.52.03-1.67c.002-.512.167-3.63-.024-5.545m-3.748 9.195h-2.561V8.29c0-1.309-.55-1.976-1.67-1.976c-1.23 0-1.846.79-1.846 2.35v3.403h-2.546V8.663c0-1.56-.617-2.35-1.848-2.35c-1.112 0-1.668.668-1.67 1.977v6.218H4.822V8.102q0-1.965 1.011-3.12c.696-.77 1.608-1.164 2.74-1.164c1.311 0 2.302.5 2.962 1.498l.638 1.06l.638-1.06c.66-.999 1.65-1.498 2.96-1.498c1.13 0 2.043.395 2.74 1.164q1.012 1.155 1.012 3.12z"/></symbol>
+      </defs></svg>
+      <ol class="fl-steps"><li>Link each app once</li><li>Its chats come in</li><li>Every device has them</li></ol>
+      <div class="fl-board">
+        <svg class="fl-wires" aria-hidden="true"></svg>
+        <div class="u-sticker fl-panel">
+          <h3 class="fl-cap">Linked in the app</h3>
+          <ul class="fl-nets">
+            <li class="fl-net" data-net="texts"><span class="fl-disc"><svg viewBox="0 0 24 24"><use href="#n-texts"/></svg></span><b>Texts &amp; picture messages</b><small>built in</small></li>
+            <li class="fl-net" data-net="telegram"><span class="fl-disc"><svg viewBox="0 0 24 24"><use href="#n-telegram"/></svg></span><b>Telegram</b><small>your number</small></li>
+            <li class="fl-net" data-net="signal"><span class="fl-disc"><svg viewBox="0 0 24 24"><use href="#n-signal"/></svg></span><b>Signal</b><small>scan a code</small></li>
+            <li class="fl-net" data-net="whatsapp"><span class="fl-disc"><svg viewBox="0 0 24 24"><use href="#n-whatsapp"/></svg></span><b>WhatsApp</b><small>scan a code</small></li>
+            <li class="fl-net" data-net="matrix"><span class="fl-disc"><svg viewBox="0 0 24 24"><use href="#n-matrix"/></svg></span><b>Matrix</b><small>your server</small></li>
+          </ul>
+          <div class="fl-keys">
+            <div class="fl-chrome" aria-hidden="true"><span class="fl-lights"><i></i><i></i><i></i></span><span class="fl-tab"><svg class="u-i"><use href="#i-lock"/></svg><span>instagram.com</span></span><span class="fl-ext"><svg class="u-i"><use href="#i-key"/></svg>Uplink keys</span></div>
+            <h3 class="fl-cap">Signed in once, in Chrome</h3>
+            <ul class="fl-nets">
+            <li class="fl-net" data-net="rcs"><span class="fl-disc"><svg viewBox="0 0 24 24"><use href="#n-rcs"/></svg></span><b>RCS · Google<i> Messages</i></b><small class="fl-pill">Synced</small></li>
+            <li class="fl-net" data-net="messenger"><span class="fl-disc"><svg viewBox="0 0 24 24"><use href="#n-messenger"/></svg></span><b>Messenger</b><small class="fl-pill">Synced</small></li>
+            <li class="fl-net" data-net="instagram"><span class="fl-disc"><svg viewBox="0 0 24 24"><use href="#n-instagram"/></svg></span><b>Instagram</b><small class="fl-pill">Synced</small></li>
+            <li class="fl-net" data-net="discord"><span class="fl-disc"><svg viewBox="0 0 24 24"><use href="#n-discord"/></svg></span><b>Discord</b><small class="fl-pill">Synced</small></li>
+            <li class="fl-net" data-net="x"><span class="fl-disc"><svg viewBox="0 0 24 24"><use href="#n-x"/></svg></span><b>X</b><small class="fl-pill">Synced</small></li>
+            <li class="fl-net" data-net="slack"><span class="fl-disc"><svg viewBox="0 0 24 24"><use href="#n-slack"/></svg></span><b>Slack</b><small class="fl-pill">Synced</small></li>
+            </ul>
+          </div>
+          <ul class="fl-soon"><li>Soon</li><li data-net="teams"><span class="fl-disc"><svg viewBox="0 0 24 24"><use href="#n-teams"/></svg></span>Teams</li><li data-net="gchat"><span class="fl-disc"><svg viewBox="0 0 24 24"><use href="#n-gchat"/></svg></span>Google Chat</li><li data-net="bluesky"><span class="fl-disc"><svg viewBox="0 0 24 24"><use href="#n-bluesky"/></svg></span>Bluesky</li><li data-net="mastodon"><span class="fl-disc"><svg viewBox="0 0 24 24"><use href="#n-mastodon"/></svg></span>Mastodon</li></ul>
         </div>
-        <button class="gm-roundbtn ib-filter" tabindex="-1" aria-label="Filter"><svg class="gm-i"><use href="/mock/icons.svg#funnel"/></svg></button>
-      </div>
-      <div class="gm-scroll ib-scroll">
-        <div class="gm-list ib-list">
-          <div class="gm-row is-unread" role="button" tabindex="-1" data-id="jo"><div class="gm-row__in">
-            <span class="gm-av" data-hue="amber">JP<span class="ib-badge"><i></i></span></span>
-            <div class="gm-row__main">
-              <div class="gm-row__top"><span class="gm-row__name">Jo Park</span><span class="gm-row__fill"></span><span class="gm-row__time">11:46 PM</span></div>
-              <div class="gm-row__bottom"><span class="gm-row__snip">are you coming tonight?</span><span class="gm-row__dot"></span></div>
+        <div class="fl-devs" aria-hidden="true" inert>
+          <div class="fl-desk">
+            <div class="fl-desk__bar"><i></i><i></i><i></i></div>
+            <div class="gm gm-fit gm-desk" data-mock="flow-desk">
+              <div class="gm-stage"><div class="gm-split">
+                <aside class="gm-split__list"><div class="gm-screen">
+                  <div class="gm-titlebar"><h1 class="gm-titlebar__title">Messages</h1><span class="gm-roundbtn"><svg class="gm-i"><use href="/mock/icons.svg#check-check"/></svg></span></div>
+                  <div class="gm-scroll"><div class="gm-list" data-fl-list data-max="5">
+                    <div class="gm-row is-unread is-selected" data-id="jo" data-net="telegram"><div class="gm-row__in"><span class="gm-av" data-hue="amber">JP<span class="fl-badge" data-net="telegram"><svg viewBox="0 0 24 24"><use href="#n-telegram"/></svg></span></span><div class="gm-row__main"><div class="gm-row__top"><span class="gm-row__name">Jo Park</span><span class="gm-row__fill"></span><span class="gm-row__time">11:38 PM</span></div><div class="gm-row__bottom"><span class="gm-row__snip">are you coming tonight?</span><span class="gm-row__dot"></span></div></div></div></div>
+                    <div class="gm-row" data-id="crew" data-net="whatsapp"><div class="gm-row__in"><span class="gm-av" data-hue="slate">WC<span class="fl-badge" data-net="whatsapp"><svg viewBox="0 0 24 24"><use href="#n-whatsapp"/></svg></span></span><div class="gm-row__main"><div class="gm-row__top"><span class="gm-row__name">Weekend crew</span><span class="gm-row__fill"></span><span class="gm-row__time">11:21 PM</span></div><div class="gm-row__bottom"><span class="gm-row__snip">tent is packed</span><span class="gm-row__dot"></span></div></div></div></div>
+                    <div class="gm-row" data-id="maya" data-net="rcs"><div class="gm-row__in"><span class="gm-av" data-hue="magenta">MC<span class="fl-badge" data-net="rcs"><svg viewBox="0 0 24 24"><use href="#n-rcs"/></svg></span></span><div class="gm-row__main"><div class="gm-row__top"><span class="gm-row__name">Maya Chen</span><span class="gm-row__fill"></span><span class="gm-row__time">10:02 PM</span></div><div class="gm-row__bottom"><span class="gm-row__snip">Sounds good, see you at 7!</span><span class="gm-row__dot"></span></div></div></div></div>
+                    <div class="gm-row" data-id="sam" data-net="discord"><div class="gm-row__in"><span class="gm-av" data-hue="blue">SR<span class="fl-badge" data-net="discord"><svg viewBox="0 0 24 24"><use href="#n-discord"/></svg></span></span><div class="gm-row__main"><div class="gm-row__top"><span class="gm-row__name">Sam Rivera</span><span class="gm-row__fill"></span><span class="gm-row__time">8:48 PM</span></div><div class="gm-row__bottom"><span class="gm-row__snip">You: thanks!</span><span class="gm-row__dot"></span></div></div></div></div>
+                    <div class="gm-row" data-id="riley" data-net="signal"><div class="gm-row__in"><span class="gm-av" data-hue="indigo">RF<span class="fl-badge" data-net="signal"><svg viewBox="0 0 24 24"><use href="#n-signal"/></svg></span></span><div class="gm-row__main"><div class="gm-row__top"><span class="gm-row__name">Riley Fox</span><span class="gm-row__fill"></span><span class="gm-row__time">6:30 PM</span></div><div class="gm-row__bottom"><span class="gm-row__snip">see you Saturday</span><span class="gm-row__dot"></span></div></div></div></div>
+                  </div></div>
+                  <div class="fl-toast"></div>
+                </div></aside>
+                <main class="gm-split__main"><div class="gm-screen">
+                  <header class="gm-head"><span class="gm-head__who"><span class="gm-av" data-hue="amber" style="--size:33px">JP<span class="fl-badge fl-badge--sm" data-net="telegram"><svg viewBox="0 0 24 24"><use href="#n-telegram"/></svg></span></span><span class="gm-head__text"><span class="gm-head__name">Jo Park</span><span class="gm-head__sub">Telegram</span></span></span></header>
+                  <div class="gm-scroll gm-scroll--end"><div class="gm-thread js-fl-thread">
+                    <div class="gm-day">Today</div>
+                    <div class="gm-msg gm-msg--in" data-g="solo"><div class="gm-bubble">hey! long time</div><div class="gm-meta">11:27 PM</div></div>
+                    <div class="gm-msg gm-msg--out" data-g="solo"><div class="gm-bubble">I know, how have you been?</div><div class="gm-meta">11:29 PM</div></div>
+                    <div class="gm-msg gm-msg--in" data-g="top"><div class="gm-bubble">good! there's a thing at the park later</div></div>
+                    <div class="gm-msg gm-msg--in" data-g="bottom"><div class="gm-bubble">are you coming tonight?</div><div class="gm-meta">11:38 PM</div></div>
+                  </div></div>
+                  <form class="gm-composer gm-composer--foot js-fl-composer" data-gm-composer=".js-fl-thread">
+                    <button type="button" class="gm-composer__btn" tabindex="-1" aria-label="Add"><svg class="gm-i"><use href="/mock/icons.svg#plus"/></svg></button>
+                    <input class="gm-composer__input" placeholder="Message Jo Park" aria-label="Message" tabindex="-1">
+                    <button type="button" class="gm-composer__btn gm-composer__mic" tabindex="-1" aria-label="Voice message"><svg class="gm-i"><use href="/mock/icons.svg#mic"/></svg></button>
+                    <button class="gm-composer__send" tabindex="-1" aria-label="Send"><svg class="gm-i"><use href="/mock/icons.svg#arrow-up"/></svg></button>
+                  </form>
+                </div></main>
+              </div></div>
             </div>
-          </div></div>
-          <div class="gm-row" role="button" tabindex="-1" data-id="maya"><div class="gm-row__in">
-            <span class="gm-av" data-hue="magenta">MC</span>
-            <div class="gm-row__main">
-              <div class="gm-row__top"><span class="gm-row__name">Maya Chen</span><span class="gm-row__fill"></span><span class="gm-row__time">11:44 PM</span></div>
-              <div class="gm-row__bottom"><span class="gm-row__snip">Sounds good, see you at 7!</span><span class="gm-row__dot"></span></div>
-            </div>
-          </div></div>
-          <div class="gm-row" role="button" tabindex="-1" data-id="crew"><div class="gm-row__in">
-            <span class="gm-av" data-hue="slate">WC<span class="ib-badge"><i></i></span></span>
-            <div class="gm-row__main">
-              <div class="gm-row__top"><span class="gm-row__name">Weekend crew</span><span class="gm-row__fill"></span><span class="gm-row__time">8:48 PM</span></div>
-              <div class="gm-row__bottom"><span class="gm-row__snip">tent is packed</span><span class="gm-row__dot"></span></div>
-            </div>
-          </div></div>
-          <div class="gm-row" role="button" tabindex="-1" data-id="dad"><div class="gm-row__in">
-            <span class="gm-av" data-hue="coral">D</span>
-            <div class="gm-row__main">
-              <div class="gm-row__top"><span class="gm-row__name">Dad</span><span class="gm-row__fill"></span><span class="gm-row__time">6:48 PM</span></div>
-              <div class="gm-row__bottom"><span class="gm-row__snip">Call me when you land</span><span class="gm-row__dot"></span></div>
-            </div>
-          </div></div>
-          <div class="gm-row" role="button" tabindex="-1" data-id="sam"><div class="gm-row__in">
-            <span class="gm-av" data-hue="orange">SR<span class="ib-badge"><i></i></span></span>
-            <div class="gm-row__main">
-              <div class="gm-row__top"><span class="gm-row__name">Sam Rivera</span><span class="gm-row__fill"></span><span class="gm-row__time">Fri</span></div>
-              <div class="gm-row__bottom"><span class="gm-row__snip">You: thanks!</span><span class="gm-row__dot"></span></div>
-            </div>
-          </div></div>
+          </div>
+          <div class="gm gm-fit fl-phone" data-mock="flow-phone">
+            <div class="gm-stage"><div class="gm-screen">
+              <div class="gm-status gm-status--shown"><span>11:41</span><span class="gm-status__icons"><i></i></span></div>
+              <div class="gm-titlebar"><h1 class="gm-titlebar__title">Messages</h1><span class="gm-roundbtn"><svg class="gm-i"><use href="/mock/icons.svg#check-check"/></svg></span></div>
+              <label class="gm-search"><svg class="gm-i"><use href="/mock/icons.svg#search"/></svg><input tabindex="-1" placeholder="Search messages" aria-label="Search messages"></label>
+              <div class="gm-scroll"><div class="gm-list" data-fl-list data-max="6">
+                <div class="gm-row is-unread" data-id="jo" data-net="telegram"><div class="gm-row__in"><span class="gm-av" data-hue="amber">JP<span class="fl-badge" data-net="telegram"><svg viewBox="0 0 24 24"><use href="#n-telegram"/></svg></span></span><div class="gm-row__main"><div class="gm-row__top"><span class="gm-row__name">Jo Park</span><span class="gm-row__fill"></span><span class="gm-row__time">11:38 PM</span></div><div class="gm-row__bottom"><span class="gm-row__snip">are you coming tonight?</span><span class="gm-row__dot"></span></div></div></div></div>
+                <div class="gm-row" data-id="crew" data-net="whatsapp"><div class="gm-row__in"><span class="gm-av" data-hue="slate">WC<span class="fl-badge" data-net="whatsapp"><svg viewBox="0 0 24 24"><use href="#n-whatsapp"/></svg></span></span><div class="gm-row__main"><div class="gm-row__top"><span class="gm-row__name">Weekend crew</span><span class="gm-row__fill"></span><span class="gm-row__time">11:21 PM</span></div><div class="gm-row__bottom"><span class="gm-row__snip">tent is packed</span><span class="gm-row__dot"></span></div></div></div></div>
+                <div class="gm-row" data-id="maya" data-net="rcs"><div class="gm-row__in"><span class="gm-av" data-hue="magenta">MC<span class="fl-badge" data-net="rcs"><svg viewBox="0 0 24 24"><use href="#n-rcs"/></svg></span></span><div class="gm-row__main"><div class="gm-row__top"><span class="gm-row__name">Maya Chen</span><span class="gm-row__fill"></span><span class="gm-row__time">10:02 PM</span></div><div class="gm-row__bottom"><span class="gm-row__snip">Sounds good, see you at 7!</span><span class="gm-row__dot"></span></div></div></div></div>
+                <div class="gm-row" data-id="sam" data-net="discord"><div class="gm-row__in"><span class="gm-av" data-hue="blue">SR<span class="fl-badge" data-net="discord"><svg viewBox="0 0 24 24"><use href="#n-discord"/></svg></span></span><div class="gm-row__main"><div class="gm-row__top"><span class="gm-row__name">Sam Rivera</span><span class="gm-row__fill"></span><span class="gm-row__time">8:48 PM</span></div><div class="gm-row__bottom"><span class="gm-row__snip">You: thanks!</span><span class="gm-row__dot"></span></div></div></div></div>
+                <div class="gm-row" data-id="riley" data-net="signal"><div class="gm-row__in"><span class="gm-av" data-hue="indigo">RF<span class="fl-badge" data-net="signal"><svg viewBox="0 0 24 24"><use href="#n-signal"/></svg></span></span><div class="gm-row__main"><div class="gm-row__top"><span class="gm-row__name">Riley Fox</span><span class="gm-row__fill"></span><span class="gm-row__time">6:30 PM</span></div><div class="gm-row__bottom"><span class="gm-row__snip">see you Saturday</span><span class="gm-row__dot"></span></div></div></div></div>
+                <div class="gm-row" data-id="dad" data-net="texts"><div class="gm-row__in"><span class="gm-av" data-hue="coral">D<span class="fl-badge" data-net="texts"><svg viewBox="0 0 24 24"><use href="#n-texts"/></svg></span></span><div class="gm-row__main"><div class="gm-row__top"><span class="gm-row__name">Dad</span><span class="gm-row__fill"></span><span class="gm-row__time">Fri</span></div><div class="gm-row__bottom"><span class="gm-row__snip">Love you, drive safe</span><span class="gm-row__dot"></span></div></div></div></div>
+              </div></div>
+              <div class="fl-toast"></div>
+            </div></div>
+          </div>
+          <span class="fl-sync"><svg class="u-i"><use href="#i-refresh"/></svg>In sync</span>
         </div>
-        <div class="ib-empty"><svg class="gm-i"><use href="/mock/icons.svg#headphones"/></svg><b>No spaces yet</b><span>Start one and your friends can drop in to talk.</span></div>
       </div>
     </div>
-  </div>
-</div>
-        <div class="gm gm-fit b" data-mock="inbox-chat" style="--w:412;--h:462.5" aria-hidden="true">
-  <div class="gm-stage">
-    <div class="gm-screen">
-      <header class="gm-head ib-head">
-        <button class="gm-iconbtn" tabindex="-1" aria-label="Back"><svg class="gm-i"><use href="/mock/icons.svg#arrow-left"/></svg></button>
-        <button class="gm-head__who" tabindex="-1">
-          <span class="gm-av" data-hue="amber" style="--size:33px">JP<span class="ib-badge ib-badge--sm"><i></i></span></span>
-          <span class="gm-head__text"><span class="gm-head__name">Jo Park</span><span class="gm-head__sub">Telegram</span></span>
-        </button>
-      </header>
-      <div class="gm-scroll gm-scroll--end ib-chatscroll">
-        <div class="gm-thread ib-thread">
-          <div class="gm-day">Today</div>
-          <div class="gm-msg gm-msg--in" data-g="solo"><div class="gm-bubble">hey! long time</div><div class="gm-meta">11:27 PM</div></div>
-          <div class="gm-msg gm-msg--out" data-g="solo"><div class="gm-bubble">I know, how have you been?</div><div class="gm-meta">11:29 PM</div></div>
-          <div class="gm-msg gm-msg--in" data-g="top"><div class="gm-bubble">good! there's a thing at the park later</div></div>
-          <div class="gm-msg gm-msg--in" data-g="bottom"><div class="gm-bubble">are you coming tonight?</div></div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-      </div>
-      <ul class="logos" aria-label="The chat apps Uplink brings together">
-        <li class="logo"><span class="mark"><svg class="u-i"><use href="#i-msg"/></svg></span><span class="name">Texts &amp; picture messages</span></li>
-        <li class="logo"><span class="mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12a12 12 0 0 0 12-12A12 12 0 0 0 12 0M4.911 7.089h11.456a2.197 2.197 0 0 1 2.165 2.19v5.863a2.213 2.213 0 0 1-2.177 2.178H8.04c-1.174 0-2.04-.99-2.04-2.178v-4.639L4.503 7.905c-.31-.42-.05-.816.408-.816m3.415 2.19c-.347 0-.68.21-.68.544s.333.544.68.544h7.905c.346 0 .68-.21.68-.544s-.334-.545-.68-.545zm0 2.177c-.347 0-.68.21-.68.544s.333.544.68.544h7.905c.346 0 .68-.21.68-.544s-.334-.544-.68-.544zm-.013 2.19c-.346 0-.68.21-.68.544s.334.544.68.544h5.728c.347 0 .68-.21.68-.544s-.333-.545-.68-.545z"/></svg></span><span class="name">RCS · Google Messages</span></li>
-        <li class="logo"><span class="mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967c-.273-.099-.471-.148-.67.15c-.197.297-.767.966-.94 1.164c-.173.199-.347.223-.644.075c-.297-.15-1.255-.463-2.39-1.475c-.883-.788-1.48-1.761-1.653-2.059c-.173-.297-.018-.458.13-.606c.134-.133.298-.347.446-.52s.198-.298.298-.497c.099-.198.05-.371-.025-.52s-.669-1.612-.916-2.207c-.242-.579-.487-.5-.669-.51a13 13 0 0 0-.57-.01c-.198 0-.52.074-.792.372c-.272.297-1.04 1.016-1.04 2.479c0 1.462 1.065 2.875 1.213 3.074s2.096 3.2 5.077 4.487c.709.306 1.262.489 1.694.625c.712.227 1.36.195 1.871.118c.571-.085 1.758-.719 2.006-1.413s.248-1.289.173-1.413c-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214l-3.741.982l.998-3.648l-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884c2.64 0 5.122 1.03 6.988 2.898a9.82 9.82 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.82 11.82 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.9 11.9 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.82 11.82 0 0 0-3.48-8.413"/></svg></span><span class="name">WhatsApp</span></li>
-        <li class="logo"><span class="mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12a12 12 0 0 0 12-12A12 12 0 0 0 12 0zm4.962 7.224c.1-.002.321.023.465.14a.5.5 0 0 1 .171.325c.016.093.036.306.02.472c-.18 1.898-.962 6.502-1.36 8.627c-.168.9-.499 1.201-.82 1.23c-.696.065-1.225-.46-1.9-.902c-1.056-.693-1.653-1.124-2.678-1.8c-1.185-.78-.417-1.21.258-1.91c.177-.184 3.247-2.977 3.307-3.23c.007-.032.014-.15-.056-.212s-.174-.041-.249-.024q-.159.037-5.061 3.345q-.72.495-1.302.48c-.428-.008-1.252-.241-1.865-.44c-.752-.245-1.349-.374-1.297-.789q.04-.324.893-.663q5.247-2.286 6.998-3.014c3.332-1.386 4.025-1.627 4.476-1.635"/></svg></span><span class="name">Telegram</span></li>
-        <li class="logo"><span class="mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 0q-.934 0-1.83.139l.17 1.111a11 11 0 0 1 3.32 0l.172-1.111A12 12 0 0 0 12 0M9.152.34A12 12 0 0 0 5.77 1.742l.584.961a10.8 10.8 0 0 1 3.066-1.27zm5.696 0l-.268 1.094a10.8 10.8 0 0 1 3.066 1.27l.584-.962A12 12 0 0 0 14.848.34M12 2.25a9.75 9.75 0 0 0-8.539 14.459c.074.134.1.292.064.441l-1.013 4.338l4.338-1.013a.62.62 0 0 1 .441.064A9.7 9.7 0 0 0 12 21.75c5.385 0 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25m-7.092.068a12 12 0 0 0-2.59 2.59l.909.664a11 11 0 0 1 2.345-2.345zm14.184 0l-.664.909a11 11 0 0 1 2.345 2.345l.909-.664a12 12 0 0 0-2.59-2.59M1.742 5.77A12 12 0 0 0 .34 9.152l1.094.268a10.8 10.8 0 0 1 1.269-3.066zm20.516 0l-.961.584a10.8 10.8 0 0 1 1.27 3.066l1.093-.268a12 12 0 0 0-1.402-3.383M.138 10.168A12 12 0 0 0 0 12q0 .934.139 1.83l1.111-.17A11 11 0 0 1 1.125 12q0-.848.125-1.66zm23.723.002l-1.111.17q.125.812.125 1.66c0 .848-.042 1.12-.125 1.66l1.111.172a12.1 12.1 0 0 0 0-3.662M1.434 14.58l-1.094.268a12 12 0 0 0 .96 2.591l-.265 1.14l1.096.255l.36-1.539l-.188-.365a10.8 10.8 0 0 1-.87-2.35m21.133 0a10.8 10.8 0 0 1-1.27 3.067l.962.584a12 12 0 0 0 1.402-3.383zm-1.793 3.848a11 11 0 0 1-2.345 2.345l.664.909a12 12 0 0 0 2.59-2.59zm-19.959 1.1L.357 21.48a1.8 1.8 0 0 0 2.162 2.161l1.954-.455l-.256-1.095l-1.953.455a.675.675 0 0 1-.81-.81l.454-1.954zm16.832 1.769a10.8 10.8 0 0 1-3.066 1.27l.268 1.093a12 12 0 0 0 3.382-1.402zm-10.94.213l-1.54.36l.256 1.095l1.139-.266c.814.415 1.683.74 2.591.961l.268-1.094a10.8 10.8 0 0 1-2.35-.869zm3.634 1.24l-.172 1.111a12.1 12.1 0 0 0 3.662 0l-.17-1.111q-.812.125-1.66.125a11 11 0 0 1-1.66-.125"/></svg></span><span class="name">Signal</span></li>
-        <li class="logo"><span class="mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20.317 4.37a19.8 19.8 0 0 0-4.885-1.515a.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.3 18.3 0 0 0-5.487 0a13 13 0 0 0-.617-1.25a.08.08 0 0 0-.079-.037A19.7 19.7 0 0 0 3.677 4.37a.1.1 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.08.08 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03a.08.08 0 0 0 .084-.028a14 14 0 0 0 1.226-1.994a.076.076 0 0 0-.041-.106a13 13 0 0 1-1.872-.892a.077.077 0 0 1-.008-.128a10 10 0 0 0 .372-.292a.07.07 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.07.07 0 0 1 .078.01q.181.149.373.292a.077.077 0 0 1-.006.127a12.3 12.3 0 0 1-1.873.892a.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.08.08 0 0 0 .084.028a19.8 19.8 0 0 0 6.002-3.03a.08.08 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.06.06 0 0 0-.031-.03M8.02 15.33c-1.182 0-2.157-1.085-2.157-2.419c0-1.333.956-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.956 2.418-2.157 2.418m7.975 0c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.955-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.946 2.418-2.157 2.418"/></svg></span><span class="name">Discord</span></li>
-        <li class="logo"><span class="mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 0C5.24 0 0 4.952 0 11.64c0 3.499 1.434 6.521 3.769 8.61a.96.96 0 0 1 .323.683l.065 2.135a.96.96 0 0 0 1.347.85l2.381-1.053a.96.96 0 0 1 .641-.046A13 13 0 0 0 12 23.28c6.76 0 12-4.952 12-11.64S18.76 0 12 0m6.806 7.44c.522-.03.971.567.63 1.094l-4.178 6.457a.707.707 0 0 1-.977.208l-3.87-2.504a.44.44 0 0 0-.49.007l-4.363 3.01c-.637.438-1.415-.317-.995-.966l4.179-6.457a.706.706 0 0 1 .977-.21l3.87 2.505c.15.097.344.094.491-.007l4.362-3.008a.7.7 0 0 1 .364-.13"/></svg></span><span class="name">Messenger</span></li>
-        <li class="logo"><span class="mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7.03.084c-1.277.06-2.149.264-2.91.563a5.9 5.9 0 0 0-2.124 1.388a5.9 5.9 0 0 0-1.38 2.127C.321 4.926.12 5.8.064 7.076s-.069 1.688-.063 4.947s.021 3.667.083 4.947c.061 1.277.264 2.149.563 2.911c.308.789.72 1.457 1.388 2.123a5.9 5.9 0 0 0 2.129 1.38c.763.295 1.636.496 2.913.552c1.278.056 1.689.069 4.947.063s3.668-.021 4.947-.082c1.28-.06 2.147-.265 2.91-.563a5.9 5.9 0 0 0 2.123-1.388a5.9 5.9 0 0 0 1.38-2.129c.295-.763.496-1.636.551-2.912c.056-1.28.07-1.69.063-4.948c-.006-3.258-.02-3.667-.081-4.947c-.06-1.28-.264-2.148-.564-2.911a5.9 5.9 0 0 0-1.387-2.123a5.9 5.9 0 0 0-2.128-1.38c-.764-.294-1.636-.496-2.914-.55C15.647.009 15.236-.006 11.977 0S8.31.021 7.03.084m.14 21.693c-1.17-.05-1.805-.245-2.228-.408a3.7 3.7 0 0 1-1.382-.895a3.7 3.7 0 0 1-.9-1.378c-.165-.423-.363-1.058-.417-2.228c-.06-1.264-.072-1.644-.08-4.848c-.006-3.204.006-3.583.061-4.848c.05-1.169.246-1.805.408-2.228c.216-.561.477-.96.895-1.382a3.7 3.7 0 0 1 1.379-.9c.423-.165 1.057-.361 2.227-.417c1.265-.06 1.644-.072 4.848-.08c3.203-.006 3.583.006 4.85.062c1.168.05 1.804.244 2.227.408c.56.216.96.475 1.382.895s.681.817.9 1.378c.165.422.362 1.056.417 2.227c.06 1.265.074 1.645.08 4.848c.005 3.203-.006 3.583-.061 4.848c-.051 1.17-.245 1.805-.408 2.23c-.216.56-.477.96-.896 1.38a3.7 3.7 0 0 1-1.378.9c-.422.165-1.058.362-2.226.418c-1.266.06-1.645.072-4.85.079s-3.582-.006-4.848-.06m9.783-16.192a1.44 1.44 0 1 0 1.437-1.442a1.44 1.44 0 0 0-1.437 1.442M5.839 12.012a6.161 6.161 0 1 0 12.323-.024a6.162 6.162 0 0 0-12.323.024M8 12.008A4 4 0 1 1 12.008 16A4 4 0 0 1 8 12.008"/></svg></span><span class="name">Instagram</span></li>
-        <li class="logo"><span class="mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5.042 15.165a2.53 2.53 0 0 1-2.52 2.523A2.53 2.53 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52zm1.271 0a2.527 2.527 0 0 1 2.521-2.52a2.527 2.527 0 0 1 2.521 2.52v6.313A2.53 2.53 0 0 1 8.834 24a2.53 2.53 0 0 1-2.521-2.522zM8.834 5.042a2.53 2.53 0 0 1-2.521-2.52A2.53 2.53 0 0 1 8.834 0a2.53 2.53 0 0 1 2.521 2.522v2.52zm0 1.271a2.53 2.53 0 0 1 2.521 2.521a2.53 2.53 0 0 1-2.521 2.521H2.522A2.53 2.53 0 0 1 0 8.834a2.53 2.53 0 0 1 2.522-2.521zm10.122 2.521a2.53 2.53 0 0 1 2.522-2.521A2.53 2.53 0 0 1 24 8.834a2.53 2.53 0 0 1-2.522 2.521h-2.522zm-1.268 0a2.53 2.53 0 0 1-2.523 2.521a2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.53 2.53 0 0 1 2.523 2.522zm-2.523 10.122a2.53 2.53 0 0 1 2.523 2.522A2.53 2.53 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522zm0-1.268a2.527 2.527 0 0 1-2.52-2.523a2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.53 2.53 0 0 1-2.522 2.523z"/></svg></span><span class="name">Slack</span></li>
-        <li class="logo"><span class="mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M14.234 10.162L22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.168 13.343L.258 24H2.33l8.016-9.318L16.749 24h6.993zm-2.837 3.299l-.929-1.329L3.076 1.56h3.182l5.965 8.532l.929 1.329l7.754 11.09h-3.182z"/></svg></span><span class="name">X</span></li>
-        <li class="logo"><span class="mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M.632.55v22.9H2.28V24H0V0h2.28v.55zm7.043 7.26v1.157h.033a3.3 3.3 0 0 1 1.117-1.024c.433-.245.936-.365 1.5-.365q.81.002 1.481.314c.448.208.785.582 1.02 1.108q.382-.562 1.034-.992q.651-.43 1.546-.43q.679 0 1.26.167c.388.11.716.286.993.53c.276.245.489.559.646.951q.229.587.23 1.417v5.728h-2.349V11.52q0-.43-.032-.812a1.8 1.8 0 0 0-.18-.66a1.1 1.1 0 0 0-.438-.448q-.292-.165-.785-.166q-.498 0-.803.189a1.4 1.4 0 0 0-.48.499a2 2 0 0 0-.231.696a6 6 0 0 0-.06.785v4.768h-2.35v-4.8q.002-.38-.018-.752a2.1 2.1 0 0 0-.143-.688a1.05 1.05 0 0 0-.415-.503c-.194-.125-.476-.19-.854-.19q-.168 0-.439.074c-.18.051-.36.143-.53.282a1.64 1.64 0 0 0-.439.595q-.18.39-.18 1.02v4.966H5.46V7.81zm15.693 15.64V.55H21.72V0H24v24h-2.28v-.55z"/></svg></span><span class="name">Matrix</span></li>
-        <li class="logo soon"><span class="mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20.625 8.127q-.55 0-1.025-.205t-.832-.563t-.563-.832T18 5.502q0-.54.205-1.02t.563-.837q.357-.358.832-.563q.474-.205 1.025-.205q.54 0 1.02.205t.837.563q.358.357.563.837t.205 1.02q0 .55-.205 1.025t-.563.832q-.357.358-.837.563t-1.02.205m0-3.75q-.469 0-.797.328t-.328.797t.328.797t.797.328t.797-.328t.328-.797t-.328-.797t-.797-.328M24 10.002v5.578q0 .774-.293 1.46t-.803 1.194q-.51.51-1.195.803q-.686.293-1.459.293q-.445 0-.908-.105q-.463-.106-.85-.329q-.293.95-.855 1.729t-1.319 1.336t-1.67.861t-1.898.305q-1.148 0-2.162-.398q-1.014-.399-1.805-1.102t-1.312-1.664t-.674-2.086h-5.8q-.411 0-.704-.293T0 16.881V6.873q0-.41.293-.703t.703-.293h8.59q-.34-.715-.34-1.5q0-.727.275-1.365q.276-.639.75-1.114q.475-.474 1.114-.75q.638-.275 1.365-.275t1.365.275t1.114.75q.474.475.75 1.114q.275.638.275 1.365t-.275 1.365q-.276.639-.75 1.113q-.475.475-1.114.75q-.638.276-1.365.276q-.188 0-.375-.024q-.188-.023-.375-.058v1.078h10.875q.469 0 .797.328t.328.797M12.75 2.373q-.41 0-.78.158q-.368.158-.638.434q-.27.275-.428.639q-.158.363-.158.773t.158.78q.159.368.428.638q.27.27.639.428t.779.158t.773-.158q.364-.159.64-.428q.274-.27.433-.639t.158-.779t-.158-.773q-.159-.364-.434-.64q-.275-.275-.639-.433q-.363-.158-.773-.158M6.937 9.814h2.25V7.94H2.814v1.875h2.25v6h1.875zm10.313 7.313v-6.75H12v6.504q0 .41-.293.703t-.703.293H8.309q.152.809.556 1.5q.405.691.985 1.19q.58.497 1.318.779q.738.281 1.582.281q.926 0 1.746-.352q.82-.351 1.436-.966q.615-.616.966-1.43q.352-.815.352-1.752m5.25-1.547v-5.203h-3.75v6.855q.305.305.691.452q.387.146.809.146q.469 0 .879-.176q.41-.175.715-.48q.304-.305.48-.715t.176-.879"/></svg></span><span class="name">Teams<small>soon</small></span></li>
-        <li class="logo soon"><span class="mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M1.637 0C.733 0 0 .733 0 1.637v16.5c0 .904.733 1.636 1.637 1.636h3.955v3.323c0 .804.97 1.207 1.539.638l3.963-3.96h11.27c.903 0 1.636-.733 1.636-1.637V5.592L18.408 0Zm3.955 5.592h12.816v8.59H8.455l-2.863 2.863Z"/></svg></span><span class="name">Google Chat<small>soon</small></span></li>
-        <li class="logo soon"><span class="mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5.202 2.857C7.954 4.922 10.913 9.11 12 11.358c1.087-2.247 4.046-6.436 6.798-8.501C20.783 1.366 24 .213 24 3.883c0 .732-.42 6.156-.667 7.037c-.856 3.061-3.978 3.842-6.755 3.37c4.854.826 6.089 3.562 3.422 6.299c-5.065 5.196-7.28-1.304-7.847-2.97c-.104-.305-.152-.448-.153-.327c0-.121-.05.022-.153.327c-.568 1.666-2.782 8.166-7.847 2.97c-2.667-2.737-1.432-5.473 3.422-6.3c-2.777.473-5.899-.308-6.755-3.369C.42 10.04 0 4.615 0 3.883c0-3.67 3.217-2.517 5.202-1.026"/></svg></span><span class="name">Bluesky<small>soon</small></span></li>
-        <li class="logo soon"><span class="mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M23.268 5.313c-.35-2.578-2.617-4.61-5.304-5.004C17.51.242 15.792 0 11.813 0h-.03c-3.98 0-4.835.242-5.288.309C3.882.692 1.496 2.518.917 5.127C.64 6.412.61 7.837.661 9.143c.074 1.874.088 3.745.26 5.611c.118 1.24.325 2.47.62 3.68c.55 2.237 2.777 4.098 4.96 4.857c2.336.792 4.849.923 7.256.38q.398-.092.786-.213c.585-.184 1.27-.39 1.774-.753a.06.06 0 0 0 .023-.043v-1.809a.05.05 0 0 0-.02-.041a.05.05 0 0 0-.046-.01a20.3 20.3 0 0 1-4.709.545c-2.73 0-3.463-1.284-3.674-1.818a5.6 5.6 0 0 1-.319-1.433a.053.053 0 0 1 .066-.054c1.517.363 3.072.546 4.632.546c.376 0 .75 0 1.125-.01c1.57-.044 3.224-.124 4.768-.422q.059-.011.11-.024c2.435-.464 4.753-1.92 4.989-5.604c.008-.145.03-1.52.03-1.67c.002-.512.167-3.63-.024-5.545m-3.748 9.195h-2.561V8.29c0-1.309-.55-1.976-1.67-1.976c-1.23 0-1.846.79-1.846 2.35v3.403h-2.546V8.663c0-1.56-.617-2.35-1.848-2.35c-1.112 0-1.668.668-1.67 1.977v6.218H4.822V8.102q0-1.965 1.011-3.12c.696-.77 1.608-1.164 2.74-1.164c1.311 0 2.302.5 2.962 1.498l.638 1.06l.638-1.06c.66-.999 1.65-1.498 2.96-1.498c1.13 0 2.043.395 2.74 1.164q1.012 1.155 1.012 3.12z"/></svg></span><span class="name">Mastodon<small>soon</small></span></li>
-      </ul>
-    </div>
-    <p class="u-sub ext">Sign in to your chat networks once in your browser with the <b>Chrome extension</b> (with the downloads above), and every device on your account is signed in too. Not in the Chrome Web Store yet: unzip it and add it in chrome://extensions with Load unpacked. <a href="/docs/browser-extension/">How to add it, and what it can see</a>.</p>
+    <p class="u-sub ext"><b>Uplink keys</b>, the Chrome extension, links the six in the browser window above: sign in to them in Chrome as you always do and every device on your account is signed in too, with nothing to copy across. <a href="/ghost-messaging-keys.zip" download>Download it</a> (it isn't in the Chrome Web Store yet: unzip it and add it in chrome://extensions with Load unpacked). <a href="/docs/browser-extension/">How to add it, and what it can see</a>.</p>
     <p class="netnote"><svg class="u-i"><use href="#i-shield"/></svg><span>Each network runs on your own device and talks straight to its own servers. Your chats, codes and sign-ins never pass through ours. The Signal helper is built on the open-source mautrix-signal and Signal's libsignal, and its source is published with every release (AGPL). Not every app is on every computer yet (Telegram and Signal aren't on Windows), and their calls aren't included: messages only.</span></p>
   </div>
 </section>

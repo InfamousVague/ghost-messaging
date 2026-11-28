@@ -27,6 +27,10 @@ class _Helper implements HelperLink {
   _Helper({this.linked = false});
   bool linked;
   final signIns = <Map<String, Object?>>[];
+
+  /// While set, a sign-in is answered with this error; [asked] counts every sign-in asked for, refused or not.
+  String? refuse;
+  int asked = 0;
   final _out = StreamController<Map<String, Object?>>.broadcast();
   @override
   Stream<Map<String, Object?>> get heard => _out.stream;
@@ -35,6 +39,12 @@ class _Helper implements HelperLink {
     Object? r;
     if (line['op'] == 'unlink') linked = false;
     if (line['op'] == 'status') r = {'linked': linked, 'connected': linked, 'me': 'me-1', 'name': 'Matt', 'handle': 'matt'};
+    if (line['op'] == 'sign_in') asked++;
+    if (line['op'] == 'sign_in' && refuse != null) {
+      final why = refuse;
+      scheduleMicrotask(() => _out.add({'id': line['id'], 'ok': false, 'error': why}));
+      return;
+    }
     if (line['op'] == 'sign_in') {
       signIns.add((line['cookies'] as Map).cast<String, Object?>());
       linked = true;
@@ -225,11 +235,122 @@ void main() {
       },
     };
     app.set('inbox_on_discord', 'off');
+    app.set(Inbox.offByHandKey('discord'), 'hand');
     await me.curlKeep(fresh);
     await sync.pull();
     expect(helper.signIns.length, 1, reason: 'switched off here');
     app.set('inbox_on_discord', 'on');
+    app.set(Inbox.offByHandKey('discord'), '');
     await sync.pull();
     expect(helper.signIns.last, {'token': 'new-token'});
+  });
+
+  // Matt, 2026-11-28 (GMFB-69): "I'm logged into discord on my phone and other accounts but it's not logging me in on
+  // my desktop account". A device settles every network it finds no session of off at its first start, and the sync
+  // took that for the person's own switch.
+  test('a network the app settled off by itself is signed in with what the account keeps; one the person switched off on another device is not', () async {
+    final keys = NetKeys.generate();
+    final hub = HubCarrier(url: 'ws://127.0.0.1:$port/hub', signer: KeysSigner(keys));
+    await hub.start();
+    await _until(() => hub.state.value == CarrierState.up, reason: hub.problem);
+    final me = Me.forTest();
+    await me.start(MemoryMeStore(), ChangeNotifier(), () => hub);
+    await me.curlKeep({
+      'v': 1,
+      'entries': {
+        'discord': {'cookies': {'token': 'phone-token'}, 'at': DateTime.now().millisecondsSinceEpoch, 'from': 'Phone'},
+      },
+    });
+    final helper = _Helper();
+    final n = AccountHelper(discordService, link: () async => helper, folder: (Directory('${dir.path}/settled')..createSync()).path);
+    final app = AppState();
+    await n.start(app);
+    await _until(() => n.state == InboxState.signedOut);
+    // As the first start leaves it (Inbox._startOne): off, and nobody pressed anything.
+    app.set('inbox_on_discord', 'off');
+    var elsewhere = true;
+    final sync = CurlSync.forTest(networks: () => [n], me: () => me, saidOff: (id) => elsewhere && id == 'netdiscord')..app = app;
+    addTearDown(() => sync.app = null);
+
+    await sync.pull();
+    expect(helper.signIns, isEmpty, reason: 'switched off by the person on another device: left off');
+    elsewhere = false;
+    await sync.pull();
+    expect(helper.signIns, [{'token': 'phone-token'}], reason: 'off only because the app settled it: signed in');
+  });
+
+  // Matt, 2026-11-28: "it's switched on it just says sign in". One try was all a synced sign-in ever got on a device:
+  // a failure that had nothing to do with the cookies (no connection that moment) left it at Sign in for good.
+  test('a synced sign-in that fails is tried again later, a few times; one a build before this left marked as tried without signing in is tried too', () async {
+    final keys = NetKeys.generate();
+    final hub = HubCarrier(url: 'ws://127.0.0.1:$port/hub', signer: KeysSigner(keys));
+    await hub.start();
+    await _until(() => hub.state.value == CarrierState.up, reason: hub.problem);
+    final me = Me.forTest();
+    await me.start(MemoryMeStore(), ChangeNotifier(), () => hub);
+    final at = DateTime.now().millisecondsSinceEpoch;
+    await me.curlKeep({
+      'v': 1,
+      'entries': {
+        'discord': {'cookies': {'token': 'phone-token'}, 'at': at, 'from': 'Phone'},
+      },
+    });
+    final helper = _Helper()..refuse = 'no connection';
+    final n = AccountHelper(discordService, link: () async => helper, folder: (Directory('${dir.path}/again')..createSync()).path);
+    final app = AppState();
+    await n.start(app);
+    await _until(() => n.state == InboxState.signedOut);
+    var clock = at;
+    final sync = CurlSync.forTest(networks: () => [n], me: () => me)..app = app..now = () => clock;
+    addTearDown(() => sync.app = null);
+
+    await sync.pull();
+    expect(helper.asked, 1, reason: 'tried once');
+    expect(n.state, InboxState.signedOut);
+    await sync.pull();
+    expect(helper.asked, 1, reason: 'not again at once');
+    clock += const Duration(minutes: 6).inMilliseconds;
+    await sync.pull();
+    expect(helper.asked, 2, reason: 'again after a few minutes');
+    // And it works this time.
+    helper.refuse = null;
+    clock += const Duration(minutes: 31).inMilliseconds;
+    await sync.pull();
+    expect(helper.signIns, [{'token': 'phone-token'}]);
+    expect(n.state, InboxState.ready);
+
+    // Refused every time: five tries, then no more.
+    await n.signOut();
+    await me.curlKeep({
+      'v': 1,
+      'entries': {
+        'discord': {'cookies': {'token': 'dead-token'}, 'at': clock, 'from': 'Phone'},
+      },
+    });
+    helper.refuse = 'Discord turned that token away';
+    final before = helper.asked;
+    for (var i = 0; i < 12; i++) {
+      await sync.pull();
+      clock += const Duration(days: 1).inMilliseconds;
+    }
+    expect(helper.asked - before, 5, reason: 'five tries of one sign-in in all');
+
+    // What a build before this left: the cookies marked tried, and never applied, because the try failed.
+    final old = AppState();
+    final helper2 = _Helper();
+    final n2 = AccountHelper(discordService, link: () async => helper2, folder: (Directory('${dir.path}/old')..createSync()).path);
+    await n2.start(old);
+    await _until(() => n2.state == InboxState.signedOut);
+    await me.curlKeep({
+      'v': 1,
+      'entries': {
+        'discord': {'cookies': {'token': 'phone-token'}, 'at': at, 'from': 'Phone'},
+      },
+    });
+    final sync2 = CurlSync.forTest(networks: () => [n2], me: () => me)..app = old;
+    addTearDown(() => sync2.app = null);
+    old.set('curl_tried_discord', CurlSync.hashForTest({'token': 'phone-token'}));
+    await sync2.pull();
+    expect(helper2.signIns, [{'token': 'phone-token'}], reason: 'marked tried by an older build, never signed in: tried again');
   });
 }

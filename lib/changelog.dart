@@ -25,6 +25,10 @@ class ReleaseNotes {
 
 /// Every release's entry, the newest first.
 const List<ReleaseNotes> changelog = [
+  ReleaseNotes('0.12.56', '2026-11-28', [
+    'Discord, Slack, Messenger and Instagram signed in on one device now reach your other devices, even one where the network was off only because it had never been used there.',
+    'A sign-in that fails to reach a device is tried again by itself, where it stayed at Sign in.',
+  ]),
   ReleaseNotes('0.12.55', '2026-11-28', [
     'Pictures from Discord, Slack, X, Messenger, Instagram, LinkedIn, WhatsApp and Matrix come through whole: one that was still loading could fail with an error about renaming a file, or arrive broken.',
     'Your souls open over the whole app from the sidebar on a phone, where they were squeezed into the sidebar.',

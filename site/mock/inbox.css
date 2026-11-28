@@ -1,70 +1,186 @@
-/* One inbox (site/mock/inbox.html): what the kit (mock.css) does not have. Scoped to the two mocks. */
+/* One inbox, drawn as a flow (Matt, 2026-11-28: "rebuild this section to show chats coming in from each provider, add
+   colors and better layout to show the flow of everything use a desktop based UI and a phone based UI to show they
+   are kept in sync and show linking with the chrome extension").
 
-/* --- the network's mark on a face's corner (lib/ui/me.dart NetworkMark badge, conversations.dart ConversationRow):
-       a ring of the row's paper (padding 2) at end -3 / bottom -3, Telegram's disc (#26A5E4) with white behind its
-       cut-out plane. In the header (inbox_ui.dart) the mark is 14 with 1.5 of the page around it. */
-[data-mock^='inbox'] .ib-badge {
-  position: absolute; right: -3px; bottom: -3px;
-  width: 24px; height: 24px; padding: 2px; border-radius: 50%;
-  background: var(--paper-2);
-  transition: background-color var(--fast) var(--ease);
+   A board (.fl-board): on its left a panel of every network, each in its own colour (lib/ui/me.dart NetworkMark's,
+   Simple Icons' where the app has none), the ones linked in the app above and the ones signed in to once in Chrome
+   inside a small browser window with the Uplink keys extension. From each a wire runs to a computer's window and a
+   phone, which show the same list: site/mock/inbox.js sends each network's chats down its wire into both, links one
+   through the extension first, and answers on the computer so the phone follows. Without the script, and where
+   nothing may move, the markup in index.html is the still picture (the script still draws the wires).
+
+   Part 1 is the board, in the site's look (uplink.css); part 2 is what the two mocks draw that mock.css does not. */
+
+/* === 1. The board =============================================================================================== */
+.fl { --fl-gap: clamp(3rem, 6.5vw, 6rem); }
+/* A network's colour: --net is its mark's own, --on-net what is drawn on it, --wire what its wire and its chats are
+   drawn in (its colour, but for one too dark to see on the night page). Texts, X and Matrix are the page's ink. */
+.fl [data-net] { --net: var(--u-ink); --on-net: var(--u-bg); --wire: var(--net); }
+.fl [data-net='rcs'] { --net: #1a73e8; --on-net: #fff; }
+.fl [data-net='whatsapp'] { --net: #25d366; --on-net: #fff; }
+.fl [data-net='telegram'] { --net: #26a5e4; --on-net: #fff; }
+.fl [data-net='signal'] { --net: #3a76f0; --on-net: #fff; }
+.fl [data-net='discord'] { --net: #5865f2; --on-net: #fff; }
+.fl [data-net='messenger'] { --net: #0866ff; --on-net: #fff; }
+.fl [data-net='instagram'] { --net: #e4405f; --on-net: #fff; }
+.fl [data-net='slack'] { --net: #4a154b; --on-net: #fff; --wire: #b860c4; }
+.fl [data-net='teams'] { --net: #6264a7; --on-net: #fff; }
+.fl [data-net='gchat'] { --net: #34a853; --on-net: #fff; }
+.fl [data-net='bluesky'] { --net: #1185fe; --on-net: #fff; }
+.fl [data-net='mastodon'] { --net: #6364ff; --on-net: #fff; }
+.fl-marks { position: absolute; }
+
+/* What it shows, in three lines; the one playing is in the ink. */
+.fl-steps { list-style: none; margin: 0 0 2.4rem; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: .5rem 1.5rem; counter-reset: fl; font-size: .9rem; font-weight: 600; color: var(--u-ink-2); }
+.fl-steps li { display: flex; align-items: center; gap: .55rem; white-space: nowrap; transition: color .3s ease; }
+.fl-steps li::before {
+  counter-increment: fl; content: counter(fl); flex: none; width: 1.45rem; height: 1.45rem; display: grid; place-items: center;
+  font-family: var(--u-display); font-style: italic; font-weight: 900; font-size: .82rem; line-height: 1;
+  border: 1.25px solid currentColor; border-radius: 3px; transform: skewX(var(--u-slant));
+  transition: background-color .3s ease, color .3s ease, border-color .3s ease;
 }
-[data-mock^='inbox'] .ib-badge i { position: relative; display: block; width: 100%; height: 100%; }
-[data-mock^='inbox'] .ib-badge i::before { content: ''; position: absolute; inset: 12%; border-radius: 50%; background: #fff; }
-[data-mock^='inbox'] .ib-badge i::after {
-  content: ''; position: absolute; inset: 0;
-  background: no-repeat center / 100% 100% url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%2326A5E4' d='M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12a12 12 0 0 0 12-12A12 12 0 0 0 12 0zm4.962 7.224c.1-.002.321.023.465.14a.5.5 0 0 1 .171.325c.016.093.036.306.02.472c-.18 1.898-.962 6.502-1.36 8.627c-.168.9-.499 1.201-.82 1.23c-.696.065-1.225-.46-1.9-.902c-1.056-.693-1.653-1.124-2.678-1.8c-1.185-.78-.417-1.21.258-1.91c.177-.184 3.247-2.977 3.307-3.23c.007-.032.014-.15-.056-.212s-.174-.041-.249-.024q-.159.037-5.061 3.345q-.72.495-1.302.48c-.428-.008-1.252-.241-1.865-.44c-.752-.245-1.349-.374-1.297-.789q.04-.324.893-.663q5.247-2.286 6.998-3.014c3.332-1.386 4.025-1.627 4.476-1.635'/%3E%3C/svg%3E");
+.fl[data-run] .fl-steps li { color: var(--u-ink-3); }
+.fl[data-run] .fl-steps li.is-done { color: var(--u-ink-2); }
+.fl[data-run] .fl-steps li.is-on { color: var(--u-ink); }
+.fl[data-run] .fl-steps li.is-on::before { background: var(--u-ink); color: var(--u-bg); border-color: var(--u-ink); }
+
+/* On a wide screen the page opens wider (--u-wide, uplink.css): the panel takes a little of that, the devices the rest,
+   up to a size they still read as a window and a phone at. */
+.fl-board { position: relative; display: grid; grid-template-columns: minmax(0, calc(23.5rem + var(--u-wide, 0px) * .13)) minmax(0, 1fr); gap: var(--fl-gap); align-items: center; }
+.fl-board > * { position: relative; z-index: 1; }
+
+/* --- the wires, drawn by the script from each network's row to the two devices ----------------------------- */
+.fl-board > .fl-wires { position: absolute; z-index: 0; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.fl-wire { fill: none; stroke: var(--wire); stroke-width: 1.5; stroke-linecap: round; opacity: .5; transition: opacity .25s ease, stroke-width .25s ease; }
+.fl-wire.is-off { stroke-dasharray: 2 6; opacity: .3; }
+.fl-wire.is-live { opacity: 1; stroke-width: 2.4; filter: drop-shadow(0 0 5px var(--wire)); }
+.fl-wire--out { stroke: var(--u-ink); opacity: .42; }
+.fl-wire--out.is-live { stroke: var(--wire); }
+.fl-jack { fill: var(--wire); stroke: var(--u-bg); stroke-width: 2.5; transition: r .25s ease; }
+.fl-jack.is-off { fill: var(--u-bg); stroke: var(--wire); stroke-width: 1.5; }
+.fl-fork { fill: var(--u-bg); stroke: var(--u-ink); stroke-width: 1.5; }
+/* A chat on its way: a dot of its network's colour. A sign-in on its way is a sealed square. */
+.fl-pkt {
+  position: absolute; left: 0; top: 0; z-index: 3; width: 11px; height: 11px; border-radius: 50%; pointer-events: none;
+  background: var(--wire); box-shadow: 0 0 0 3px color-mix(in srgb, var(--wire) 32%, transparent), 0 0 14px 2px var(--wire);
+  offset-rotate: 0deg;
 }
-[data-mock^='inbox'] .ib-badge--sm { width: 17px; height: 17px; padding: 1.5px; background: var(--paper); }@media (hover: hover) { [data-mock^='inbox'] .gm-row:hover .ib-badge { background: var(--hover); } }
+.fl-pkt--key { width: 13px; height: 13px; border-radius: 3.5px; background: var(--u-ink); box-shadow: 0 0 0 2.5px var(--wire), 0 0 14px 2px var(--wire); }
 
-[data-mock^='inbox'] .gm-row:active .ib-badge, [data-mock^='inbox'] .gm-row.is-pressed .ib-badge { background: var(--paper-3); }@media (hover: hover) { [data-mock^='inbox'] .gm-head__who:hover .ib-badge--sm { background: var(--paper-2); } }
+/* --- the panel: every network, a row each ------------------------------------------------------------------ */
+.fl-panel { padding: 1.05rem; }
+.fl-cap { margin: 0 0 .45rem; padding: 0 .55rem; font: 700 .7rem/1.2 var(--u-body); letter-spacing: .1em; text-transform: uppercase; color: var(--u-ink-3); }
+.fl-nets { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; }
+.fl-net { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: .7rem; min-height: 2.3rem; padding: .22rem .55rem; border-radius: var(--u-r-sm); transition: background-color .3s ease, opacity .3s ease; }
+.fl-net b { font-weight: 600; font-size: .93rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fl-net small { font-size: .75rem; color: var(--u-ink-3); white-space: nowrap; }
+.fl-net b i { font-style: normal; }
+.fl-net.is-live { background: color-mix(in srgb, var(--wire) 15%, transparent); }
+/* A network's mark: white on a disc of its colour, as the app draws it on a face's corner. Telegram's own mark is
+   the disc with the plane cut out of it, so it is drawn in the colour over white. */
+.fl-disc { flex: none; width: 1.8rem; height: 1.8rem; display: grid; place-items: center; border-radius: 50%; background: var(--net); color: var(--on-net); transition: transform .32s cubic-bezier(.34, 1.56, .64, 1), box-shadow .3s ease; }
+.fl-disc svg { width: 58%; height: 58%; fill: currentColor; }
+[data-net='telegram'] > .fl-disc { background: radial-gradient(circle, #fff 60%, transparent 62%); color: var(--net); }
+[data-net='telegram'] > .fl-disc svg { width: 100%; height: 100%; }
+.fl-net.is-live .fl-disc { transform: scale(1.12); box-shadow: 0 0 0 4px color-mix(in srgb, var(--wire) 30%, transparent), 0 0 18px color-mix(in srgb, var(--wire) 75%, transparent); }
+/* The ones signed in to in a browser: a small Chrome window, the extension's button in its bar and its list under it,
+   each row with how it stands, as the extension's own window says it. */
+.fl-keys { margin-top: .85rem; border: 1px solid var(--u-rule); border-radius: var(--u-r); background: color-mix(in srgb, var(--u-ink) 4%, transparent); overflow: hidden; }
+.fl-keys .fl-cap { margin-top: .7rem; }
+.fl-keys .fl-nets { padding: 0 0 .4rem; }
+.fl-chrome { display: flex; align-items: center; gap: .55rem; padding: .42rem .6rem; border-bottom: 1px solid var(--u-rule); background: color-mix(in srgb, var(--u-ink) 5%, transparent); }
+.fl-lights { display: flex; gap: .28rem; }
+.fl-lights i { width: .5rem; height: .5rem; border-radius: 50%; border: 1.25px solid var(--u-ink-3); }
+.fl-tab { flex: 0 1 auto; min-width: 0; display: inline-flex; align-items: center; gap: .4rem; padding: .16rem .6rem; border-radius: 99px; background: var(--u-rule); font: 500 .72rem/1.5 var(--u-mono); color: var(--u-ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fl-tab .u-i { width: .72rem; height: .72rem; }
+.fl-ext { margin-left: auto; flex: none; display: inline-flex; align-items: center; gap: .35rem; padding: .14rem .55rem .14rem .4rem; border-radius: 6px; border: 1.25px solid var(--u-ink); font-size: .72rem; font-weight: 700; white-space: nowrap; transition: background-color .25s ease, color .25s ease; }
+.fl-ext .u-i { width: .82rem; height: .82rem; }
+.fl-ext.is-busy { background: var(--u-ink); color: var(--u-bg); }
+.fl-pill { display: inline-flex; align-items: center; gap: .3rem; padding: .1rem .55rem; border-radius: 99px; font-weight: 600; background: color-mix(in srgb, #2fb35a 20%, transparent); color: #3fca6b !important; transition: background-color .3s ease, color .3s ease; }
+:root[data-theme='light'] .fl-pill { color: #1f8a43 !important; }
+.fl-pill::before { content: ''; width: .5rem; height: .28rem; margin-top: -.12rem; border-left: 1.6px solid currentColor; border-bottom: 1.6px solid currentColor; transform: rotate(-45deg); }
+.fl-pill[data-state='here'], .fl-pill[data-state='sync'] { background: var(--u-rule); color: var(--u-ink-2) !important; }
+.fl-pill[data-state='here']::before, .fl-pill[data-state='sync']::before { display: none; }
+.fl-net.is-unlinked .fl-disc { filter: saturate(.25); opacity: .7; }
+/* The ones on their way. */
+.fl-soon { list-style: none; margin: .8rem 0 0; padding: 0 .55rem; display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .9rem; font-size: .8rem; font-weight: 600; color: var(--u-ink-3); }
+.fl-soon li { display: inline-flex; align-items: center; gap: .4rem; }
+.fl-soon .fl-disc { width: 1.25rem; height: 1.25rem; opacity: .75; }
+.fl-soon li:first-child { font-size: .7rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
 
+/* --- the two devices: a computer's window, and a phone over its corner -------------------------------------- */
+.fl-devs { width: 100%; max-width: 52rem; justify-self: center; aspect-ratio: 700 / 522; }
+.fl-desk { position: absolute; left: 0; top: 0; width: 74%; border: 1px solid var(--u-rule); border-radius: var(--u-r); background: var(--u-paper); box-shadow: var(--u-shadow); overflow: hidden; }
+.fl-desk__bar { display: flex; align-items: center; gap: .36rem; padding: .5rem .7rem; border-bottom: 1px solid var(--u-rule); }
+.fl-desk__bar i { width: .55rem; height: .55rem; border-radius: 50%; border: 1.25px solid var(--u-ink-3); }
+.fl-desk > .gm-fit { --w: 750; --h: 470; }
+.fl-phone { position: absolute; right: 0; bottom: 0; width: 32.5%; --w: 412; --h: 612; border-radius: 1.5rem; box-shadow: 0 0 0 1px var(--u-rule), 0 0 0 5px var(--u-bg), 0 0 0 6px var(--u-rule), 0 30px 60px -20px rgba(0, 0, 0, .7); }
+/* What says the two are the same: placed on the phone's wire by the script. */
+.fl-sync { position: absolute; z-index: 4; left: 12%; top: 88%; transform: translate(-50%, -50%); display: inline-flex; align-items: center; gap: .42rem; padding: .28rem .8rem .28rem .5rem; border: 1px solid var(--u-rule); border-radius: 99px; background: var(--u-paper); font-size: .8rem; font-weight: 600; color: var(--u-ink-2); white-space: nowrap; transition: border-color .3s ease, color .3s ease; }
+.fl-sync .u-i { width: .95rem; height: .95rem; }
+.fl-sync.is-pulse { border-color: var(--u-ink); color: var(--u-ink); }
+.fl-sync.is-pulse .u-i { animation: fl-turn 800ms cubic-bezier(.3, .7, .2, 1); }
+@keyframes fl-turn { to { transform: rotate(360deg); } }
 
-/* --- inbox-list ------------------------------------------------------------------------------------------------ */
-[data-mock='inbox-list'] .gm-titlebar { gap: 0; min-height: 56px; }
-[data-mock='inbox-list'] .gm-titlebar__title { margin-right: 4px; padding-top: 4px; }
-/* "Read all" is quiet while there is nothing… the shot draws it dim; it wakes under the pointer. */
-[data-mock='inbox-list'] .ib-readall { color: var(--ink-4); margin: 0 2px; }@media (hover: hover) { [data-mock='inbox-list'] .ib-readall:hover, [data-mock='inbox-list'] .ib-readall.is-live { color: var(--ink); } }
-
-[data-mock='inbox-list'] .ib-tabsrow { gap: 10px; margin: 9px var(--s2) 0; }
-[data-mock='inbox-list'] .ib-scroll { padding-top: 12px; }
-[data-mock='inbox-list'] .gm-row__main { gap: 0; transform: translateY(-1px); }
-[data-mock='inbox-list'] .ib-list { transition: opacity var(--normal) var(--ease), transform var(--normal) var(--ease); }
-[data-mock='inbox-list'] .gm-row { will-change: transform; }
-[data-mock='inbox-list'] .gm-row__snip { transition: color var(--normal); }
-/* A row just arrived at the top: its face bounces once. */
-[data-mock='inbox-list'] .gm-row.ib-bump .gm-av { animation: ib-bump 520ms var(--ease-spring); }
-@keyframes ib-bump { 0% { transform: scale(.85); } 100% { transform: none; } }
-
-/* The spaces tab: nothing there yet, a quiet note in the middle. */
-[data-mock='inbox-list'] .ib-empty {
-  position: absolute; inset: 0; padding: 0 48px 60px;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center;
-  color: var(--ink-3); font-size: var(--fs-sm); line-height: 1.4;
-  opacity: 0; transform: translateY(8px); pointer-events: none;
-  transition: opacity var(--normal) var(--ease), transform var(--normal) var(--ease);
+/* --- narrower: the panel over the devices, one wire down between them ------------------------------------ */
+@media (max-width: 1020px) {
+  .fl-board { grid-template-columns: minmax(0, 1fr); gap: 4.2rem; justify-items: center; }
+  .fl-panel { width: 100%; max-width: 30rem; }
+  .fl-devs { max-width: 40rem; }
+  .fl-steps { margin-bottom: 1.8rem; }
 }
-[data-mock='inbox-list'] .ib-empty .gm-i { width: 34px; height: 34px; color: var(--ink-3); margin-bottom: 4px; }
-[data-mock='inbox-list'] .ib-empty b { color: var(--ink); font-size: var(--fs-md); font-weight: 600; }
-[data-mock='inbox-list'].ib-spaces .ib-list { opacity: 0; transform: translateY(-8px); pointer-events: none; }
-[data-mock='inbox-list'].ib-spaces .ib-empty { opacity: 1; transform: none; }
+@media (max-width: 600px) {
+  .fl-devs { aspect-ratio: 343 / 430; }
+  .fl-desk { left: auto; right: 0; width: 93%; }
+  .fl-phone { width: 50%; border-radius: 1.15rem; }
+  .fl-steps { font-size: .84rem; gap: .45rem 1rem; }
+  .fl-net b { font-size: .9rem; }
+  .fl-net b i { display: none; }   /* "RCS · Google", where the whole name would be cut */
+  .fl-net { min-height: 2.2rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fl-wire, .fl-net, .fl-disc { transition: none; }
+}
 
-/* --- inbox-chat (inbox_ui.dart's header: the face 2.1rem, name md semibold, network xs ink-3) ---------------------- */
-[data-mock='inbox-chat'] .ib-head { height: 56px; padding-left: 4px; gap: 4px; }
-[data-mock='inbox-chat'] .gm-head__who { flex: 0 1 auto; gap: var(--s2); margin-left: -5px; padding-right: 14px; }
-[data-mock='inbox-chat'] .gm-head__text { transform: translateY(1.5px); }
-[data-mock='inbox-chat'] .gm-head__name { font-size: var(--fs-md); font-weight: 600; margin-top: 0; line-height: 1.25; }
-[data-mock='inbox-chat'] .gm-head__sub { font-size: var(--fs-xs); color: var(--ink-3); line-height: 1.3; margin-top: -1px; }
-/* A network's bubbles (inbox_ui.dart _InboxBubble): space 3 by space 2, words at 1.3, corners 1.125rem and 0.375rem
-   tucked; space 2 above the first of a run, 2 between, the time 2 under the last; the day's heading space 3 round. */
-[data-mock='inbox-chat'] .gm-bubble { --small: 6px; padding: calc(var(--s2) - 1px) calc(var(--s3) - 1px); line-height: 1.3; }
-[data-mock='inbox-chat'] .gm-msg--in > .gm-bubble { border-color: transparent; }
-[data-mock='inbox-chat'] .gm-msg, [data-mock='inbox-chat'] .gm-msg + .gm-msg:not([data-g='mid']):not([data-g='bottom']) { margin-top: var(--s2); }
-[data-mock='inbox-chat'] .gm-msg[data-g='mid'], [data-mock='inbox-chat'] .gm-msg[data-g='bottom'] { margin-top: 2px; }
-[data-mock='inbox-chat'] .gm-meta { padding: 2px var(--s2) 0; line-height: 1.12; }
-[data-mock='inbox-chat'] .gm-day { padding: var(--s3) 0 calc(var(--s3) - 2px); line-height: 1.21; }
-[data-mock='inbox-chat'] .gm-msg { max-width: 309px; }
-/* The shot cuts the last bubble at its foot: the thread runs a little past the box. */
-[data-mock='inbox-chat'] .ib-chatscroll { margin-bottom: -2px; overflow: hidden; }
-[data-mock='inbox-chat'] .ib-thread { padding-bottom: 0; }
-[data-mock='inbox-chat'] .ib-thread.ib-fade { transition: opacity 400ms var(--ease); opacity: 0; }
+/* === 2. The mocks =============================================================================================== */
+/* The network's mark on a face's corner (lib/ui/me.dart NetworkMark as a badge, conversations.dart ConversationRow):
+   a ring of the row's paper round the disc, at end -3 and bottom -3. */
+.fl .fl-badge { position: absolute; right: -3px; bottom: -3px; width: 24px; height: 24px; padding: 2px; border-radius: 50%; background: var(--paper-2); }
+.fl .fl-badge svg { display: block; width: 100%; height: 100%; padding: 21%; border-radius: 50%; background: var(--net); fill: var(--on-net); }
+.fl .fl-badge[data-net='telegram'] svg { padding: 0; background: radial-gradient(circle, #fff 58%, transparent 60%); fill: var(--net); }
+.fl .fl-badge--sm { width: 17px; height: 17px; padding: 1.5px; background: var(--paper); }
+/* The list, on both: a row that has just come is washed in its network's colour for a moment. */
+[data-mock^='flow'] .gm-titlebar { gap: 0; min-height: 56px; }
+[data-mock^='flow'] .gm-titlebar__title { padding-top: 4px; }
+[data-mock^='flow'] .gm-row { will-change: transform; }
+[data-mock^='flow'] .gm-row__main { gap: 0; }
+[data-mock^='flow'] .gm-row.fl-new { animation: fl-new 900ms var(--ease) both; }
+[data-mock^='flow'] .gm-row.fl-new .gm-av { animation: fl-bump 520ms var(--ease-spring); }
+@keyframes fl-new { 0% { background-color: color-mix(in srgb, var(--wire) 42%, var(--paper-2)); box-shadow: 0 0 0 1.5px var(--wire); } 100% { box-shadow: 0 0 0 1.5px transparent; } }
+@keyframes fl-bump { 0% { transform: scale(.82); } 100% { transform: none; } }
+[data-mock^='flow'] .gm-row.fl-in { animation: fl-rise 420ms var(--ease) both, fl-new 900ms var(--ease) both; }
+@keyframes fl-rise { from { opacity: 0; transform: translateY(-14px); } to { opacity: 1; transform: none; } }
+[data-mock^='flow'] [data-fl-list] { transition: opacity 320ms var(--ease); }
+[data-mock^='flow'] [data-fl-list].is-fading, [data-mock='flow-desk'] .gm-thread.is-fading { opacity: 0; }
+/* A network just signed in here: said over the list, on both devices at once. */
+.fl-toast {
+  position: absolute; left: 50%; top: 64px; z-index: 6; display: flex; align-items: center; gap: 9px; padding: 7px 15px 7px 8px; border-radius: 999px;
+  background: var(--ink); color: var(--paper); font-size: var(--fs-sm); font-weight: 600; white-space: nowrap; pointer-events: none;
+  opacity: 0; transform: translate(-50%, -8px); transition: opacity var(--normal) var(--ease), transform var(--normal) var(--ease);
+}
+.fl-toast.is-on { opacity: 1; transform: translate(-50%, 0); }
+.fl-toast .fl-badge { position: static; flex: none; width: 24px; height: 24px; padding: 0; background: none; }
+/* The computer's window: the list at the left, the conversation beside it. */
+[data-mock='flow-desk'] > .gm-stage { background: var(--paper); }
+[data-mock='flow-desk'] .gm-split { position: absolute; inset: 0; }
+[data-mock='flow-desk'] .gm-split__list { width: 318px; }
+[data-mock='flow-desk'] .gm-split__main { --msg-max: 300px; }
+[data-mock='flow-desk'] .gm-scroll { padding-top: 6px; }
+[data-mock='flow-desk'] .gm-head { height: 56px; padding-left: 12px; }
+[data-mock='flow-desk'] .gm-head__name { font-size: var(--fs-md); font-weight: 600; margin-top: 0; }
+[data-mock='flow-desk'] .gm-head__sub { font-size: var(--fs-xs); color: var(--ink-3); }
+/* The phone stands over the window's right edge: the conversation keeps clear of it, so an answer written there shows. */
+[data-mock='flow-desk'] .gm-thread { padding-right: 76px; transition: opacity 320ms var(--ease); }
+[data-mock='flow-desk'] .gm-composer--foot { margin-right: 80px; margin-bottom: 14px; }
+[data-mock='flow-phone'] .gm-scroll { padding-top: 12px; }
+[data-mock='flow-phone'] .gm-search { margin-top: 2px; }

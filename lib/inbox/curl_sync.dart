@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart' show visibleForTesting;
 import '../account/account.dart';
 import '../app_state.dart';
 import '../me/me.dart';
+import '../plugins/plugin_sync.dart';
 import '../sms.dart';
 import 'account_helper.dart';
 import 'inbox.dart';
@@ -34,11 +35,15 @@ class CurlSync {
 
   /// One of its own, with its own networks and Me (a test).
   @visibleForTesting
-  CurlSync.forTest({required Iterable<InboxNetwork> Function() networks, required Me Function() me})
+  CurlSync.forTest({required Iterable<InboxNetwork> Function() networks, required Me Function() me, bool Function(String pluginId)? saidOff})
       : _networks = networks,
-        _me = me;
+        _me = me,
+        _saidOff = saidOff ?? ((_) => false);
 
   Iterable<InboxNetwork> Function() _networks = _allNetworks;
+
+  /// Whether the person switched a plugin off, as the plugins' own sync knows it (lib/plugins/plugin_sync.dart).
+  bool Function(String pluginId) _saidOff = PluginSync.instance.saidOff;
   Me Function() _me = _theMe;
   static Iterable<InboxNetwork> _allNetworks() => Inbox.instance.networks;
   static Me _theMe() => Me.instance;
@@ -178,6 +183,9 @@ class CurlSync {
     return sha256.convert(utf8.encode(jsonEncode([for (final k in keys) [k, cookies[k]]]))).toString().substring(0, 16);
   }
 
+  @visibleForTesting
+  static String hashForTest(Map<String, String> cookies) => _hash(cookies);
+
   static bool _same(Map<String, String> a, Map<String, String> b) => a.length == b.length && a.entries.every((e) => b[e.key] == e.value);
 
   /// On the phone, for a paired computer that asks ('signins' across the link): the sign-ins this phone holds, and
@@ -266,7 +274,7 @@ class CurlSync {
     if (n is! AccountHelper) return; // only cookie-login helpers can take cURL entries
     // X also needs its passcode, which only the person can give: its sign-in screen offers the synced cookies.
     if (n.service.passcode) return;
-    final appliedKey = 'curl_applied_$serviceId', triedKey = 'curl_tried_$serviceId';
+    final appliedKey = 'curl_applied_$serviceId', triedKey = 'curl_tried_$serviceId', doneKey = 'curl_done_$serviceId', failedKey = 'curl_failed_$serviceId';
     final already = int.tryParse(app.choice(appliedKey, '0')) ?? 0;
     final hash = _hash(cookies);
 
@@ -275,13 +283,24 @@ class CurlSync {
     if (n.state == InboxState.ready || n.state == InboxState.signingIn) {
       if (at > already) app.set(appliedKey, '$at');
       app.set(triedKey, hash);
+      app.set(doneKey, hash);
       return;
     }
-    // Switched off here by the person: left off.
-    if (app.choice('inbox_on_$serviceId', '') == 'off') return;
-    // These very cookies tried here before (signed in with and since signed out of, or refused): not again, whatever
-    // time they carry. Only another sign-in, made somewhere since, is tried.
-    if (app.choice(triedKey, '') == hash) return;
+    // Switched off by the person, here or on another of their devices: left off. Not a switch that is off only because
+    // the app settled it so: every network a device finds no session of at its first start is settled off
+    // (Inbox._startOne), and that was taken for the person's choice, so a computer never signed in with what the phone
+    // had (Matt, 2026-11-28: "I'm logged into discord on my phone and other accounts but it's not logging me in on my
+    // desktop account"; GMFB-69).
+    if (app.choice('inbox_on_$serviceId', '') == 'off' && (app.choice(Inbox.offByHandKey(serviceId), '') == 'hand' || _saidOff('net$serviceId'))) return;
+    // These very cookies signed in with here before, and since signed out of: not again, whatever time they carry. Only
+    // another sign-in, made somewhere since, is tried. (`curl_tried` alone, from a build that kept nothing else, was
+    // set before the sign-in was asked for and stayed whether it worked or not: it is a sign-in that worked only where
+    // the entry was also marked applied, which a failure never was.)
+    if (app.choice(doneKey, '') == hash) return;
+    if (app.choice(triedKey, '') == hash && at <= already) return;
+    // Tried and not signed in (below): again later, a few times, further apart each time.
+    final failed = _Failed.read(app.choice(failedKey, ''));
+    if (failed.hash == hash && !failed.due(_now())) return;
     // Nothing newer than what we last signed in with, and not currently signed in: the cookies likely expired the
     // same way here; try again only when the extension has captured fresher ones.
     if (at <= already && already > 0) return;
@@ -295,8 +314,45 @@ class CurlSync {
     }
     if (n.state != InboxState.signedOut) return; // helper not in this build
 
-    app.set(triedKey, hash);
     final ok = await n.signIn(jsonEncode(cookies), share: false);
-    if (ok) app.set(appliedKey, '$at');
+    if (ok) {
+      app.set(triedKey, hash);
+      app.set(doneKey, hash);
+      app.set(appliedKey, '$at');
+      app.set(failedKey, '');
+      return;
+    }
+    // Not signed in: the service turned the cookies away, or nothing was wrong with them at all (the helper not up
+    // yet, no connection that moment, the service slow to answer). The two can't be told apart from here, and one try
+    // used to be the only one these cookies ever got on this device, so a computer that was offline for it stayed at
+    // "Sign in" for good (Matt, 2026-11-28: "it's switched on it just says sign in").
+    app.set(failedKey, _Failed(hash, failed.hash == hash ? failed.times + 1 : 1, _now()).words);
   }
+
+  /// The time now, in milliseconds; a test's own.
+  @visibleForTesting
+  int Function() now = () => DateTime.now().millisecondsSinceEpoch;
+  int _now() => now();
+}
+
+/// A synced sign-in that was tried on this device and did not sign in: which cookies (their fingerprint), how many
+/// times, and when last. Kept as `hash:times:at`.
+class _Failed {
+  const _Failed(this.hash, this.times, this.at);
+  final String hash;
+  final int times, at;
+
+  static _Failed read(String words) {
+    final p = words.split(':');
+    if (p.length != 3) return const _Failed('', 0, 0);
+    return _Failed(p[0], int.tryParse(p[1]) ?? 0, int.tryParse(p[2]) ?? 0);
+  }
+
+  String get words => '$hash:$times:$at';
+
+  /// How long after each failure the next try waits: five tries in all, over about a day.
+  static const waits = [Duration(minutes: 5), Duration(minutes: 30), Duration(hours: 3), Duration(hours: 20)];
+
+  /// Whether it is time to try again: never once every wait has been used.
+  bool due(int now) => times > 0 && times <= waits.length && now - at >= waits[times - 1].inMilliseconds;
 }

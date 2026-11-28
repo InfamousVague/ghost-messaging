@@ -306,6 +306,13 @@ class PluginSync {
     switched(plugin.id, on, version: version);
   }
 
+  /// Whether the newest line for [id] is off: the person switched it off, here or on another of their devices. False
+  /// where there is no line, as for a switch the app settled by itself.
+  bool saidOff(String id) {
+    _load();
+    return _list[id]?.on == false;
+  }
+
   /// The person switched [id] on or off here (a pack added or removed, a network's switch in Settings › Connections):
   /// a line, kept for the other devices a few seconds later.
   void switched(String id, bool on, {String? version}) {

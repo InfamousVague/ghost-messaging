@@ -923,9 +923,15 @@ class Inbox {
     if (unset && app.choice(key, '').isEmpty) app.set(key, (n.state == InboxState.ready || n.state == InboxState.signingIn) ? 'on' : 'off');
   }
 
+  /// Where it is kept that the person switched network [id] off ([disable]), apart from the switch itself: the switch
+  /// is also settled off by the app, at a device's first start, for every network it finds no session of ([_startOne]),
+  /// and a sign-in synced from another device must not take that for the person's choice (lib/inbox/curl_sync.dart).
+  static String offByHandKey(String id) => 'inbox_off_$id';
+
   /// Switches a plugin network on and starts it, so it can be signed in to.
   Future<void> enable(InboxNetwork n) async {
     n.listStore?.set('inbox_on_${n.id}', 'on');
+    n.listStore?.set(offByHandKey(n.id), '');
     try {
       await n.start(n.listStore!);
     } catch (e) {
@@ -938,6 +944,7 @@ class Inbox {
   Future<void> disable(InboxNetwork n) async {
     if (n.state == InboxState.ready || n.state == InboxState.signingIn) await n.signOut();
     n.listStore?.set('inbox_on_${n.id}', 'off');
+    n.listStore?.set(offByHandKey(n.id), 'hand');
     notifyChange();
   }
 

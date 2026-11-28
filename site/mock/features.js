@@ -235,37 +235,36 @@
     toast.classList.remove('is-on');
   }
 
-  /* --- screen sharing: a window picked, the call looking at it, and its sound going too ---------------------- */
-  async function share(x) {
-    const scr = x.screen, win = x.$('.js-window'), thumbs = x.$$('.fh-thumb'), faces = x.$$('.fh-watch .gm-av');
-    const sound = x.$('.fh-sound'), who = x.$('.js-watching');
-    // The first frame: what there is to share.
-    scr.dataset.view = 'pick'; scr.classList.remove('is-drawing');
-    thumbs.forEach((t) => t.classList.remove('is-picked'));
-    faces.forEach((f) => f.classList.remove('is-in'));
-    sound.classList.remove('is-on'); who.textContent = 'Nobody yet';
+  /* --- plugins: one added from the Marketplace's Discover, and at work on the next text that comes ------------ */
+  async function plugins(x) {
+    const card = x.$('.js-translate'), act = card.querySelector('.fp-act'), counts = x.$$('.js-added');
+    const peek = x.$('.fp-peek'), said = x.$('.js-said');
+    const added = (on) => {
+      card.classList.toggle('is-added', on);
+      act.innerHTML = on ? `<svg class="gm-i"><use href="${ICONS}circle-check"/></svg>Added` : 'Add';
+      counts.forEach((c) => { c.textContent = on ? '10' : '9'; });
+    };
+    // The first frame: Translate not added yet, and no text come.
+    added(false); card.classList.remove('is-new');
+    peek.classList.remove('is-on', 'is-translated');
+    said.classList.remove('is-swap'); said.textContent = '¿Nos vemos mañana a las ocho?';
     await x.ready();
 
-    x.step(0);   // one window, not the whole screen
-    await x.wait(900);
-    await x.tap(win.querySelector('.fh-pic'));
-    win.classList.add('is-picked');
-    await x.wait(520);
+    x.step(0);   // Discover, in the Marketplace
+    await x.wait(1100);
+    await x.tap(act);
+
+    x.step(1);   // "Added" stands where Add was, and the counts say one more
+    added(true); card.classList.add('is-new');
     x.lift();
-    scr.dataset.view = 'live'; scr.classList.add('is-drawing');
-    await x.wait(700);
+    await x.wait(1500);
 
-    x.step(1);   // the call comes to look
-    const names = ['Maya <i>is watching</i>', 'Maya and Jo <i>are watching</i>', 'Maya, Jo and Sam <i>are watching</i>'];   // (the names alone on a narrow stage)
-    for (let i = 0; i < faces.length; i++) {
-      faces[i].classList.add('is-in'); who.innerHTML = names[i];
-      await x.wait(430);
-    }
-    await x.wait(900);
-
-    x.step(2);   // what the window plays is heard too
-    sound.classList.add('is-on');
-    await x.wait(2500);
+    x.step(2);   // a text in another language comes, and is read in yours
+    peek.classList.add('is-on');
+    await x.wait(1400);
+    said.textContent = 'See you tomorrow at eight?';
+    said.classList.add('is-swap'); peek.classList.add('is-translated');
+    await x.wait(2600);
   }
 
   /* --- watch together: a video picked in a call plays for everyone in step, and pauses for everyone ---------- */
@@ -361,7 +360,7 @@
     await x.wait(1500);
   }
 
-  const demos = { files, sync, rec, share, watch, captions };
+  const demos = { files, sync, rec, plugins, watch, captions };
   /* What a stage needs drawn by script even while it is still: the recording's waveforms. */
   const stills = { rec: drawRec };
 

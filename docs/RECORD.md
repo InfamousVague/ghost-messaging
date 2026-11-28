@@ -33,6 +33,15 @@ github.com/InfamousVague/ghost-gmessages-sidecar).
 
 ## What it does
 
+- **A sign-in kept for the account reaches a device that was off or failed once** (0.12.56, 2026-11-28; GMFB-69,
+  Matt: his second Mac had Discord switched on and stuck at "Sign in" while his phone was signed in). A device settles
+  every network it finds no session of as off at its first start, and the sign-in sync (`lib/inbox/curl_sync.dart`)
+  took that for the person's own switch, so a computer never signed in with what the phone had. A network is now left
+  off only where the person switched it off (`inbox_off_<id>` = `hand`, set by `Inbox.disable` and cleared by
+  `Inbox.enable`, `lib/inbox/inbox.dart`; or an off line in the plugins' sync, `lib/plugins/plugin_sync.dart`). And a
+  synced sign-in was marked tried before it was asked for, so one failure was its only try on that device: a failure is
+  now tried again after 5 minutes, 30 minutes, 3 hours and 20 hours (`curl_failed_<id>`), while one that worked and was
+  signed out of is still not signed in again (`curl_done_<id>`). Tests: `test/curl_relay_test.dart`.
 - **Fixes from the feedback board, and chat files downloaded once** (0.12.55, 2026-11-28).
   - **A chat's file is downloaded once** (Matt, Mac: "rename …/discord/files/330240540.png.part …: no such file or
     directory"). A picture asks for its file every time it is drawn (`lib/ui/inbox_ui.dart`), so a second download of
